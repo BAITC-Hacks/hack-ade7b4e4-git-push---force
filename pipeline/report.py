@@ -29,6 +29,7 @@ td{padding:6px 8px;border-bottom:1px solid #eef2f7;vertical-align:top}td.n{text-
 .gid{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#1d4ed8;text-decoration:none;white-space:nowrap}
 .role{display:inline-block;padding:1px 8px;border-radius:10px;color:#fff;font-size:11.5px;white-space:nowrap}
 .muted{color:#7b8794;font-size:12px}footer{margin-top:28px;color:#7b8794;font-size:12px}
+@media (max-width:700px){.page{margin:0;border-radius:0;padding:20px 16px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}table{display:block;overflow-x:auto}.flow .arrow{display:none!important}}
 @media print{body{background:#fff}.page{box-shadow:none;margin:0;max-width:none;padding:0 8mm}h2{break-after:avoid}tr{break-inside:avoid}}
 """
 
@@ -39,6 +40,16 @@ def _int(n: int) -> str:
 
 def _pct1(x: float) -> str:
     return f"{x * 100:.1f}".replace(".", ",") + "%"
+
+
+def _period(p) -> str:
+    """'2026-07-01..2026-07-31' -> 'с 01.07.2026 по 31.07.2026'; иначе как есть."""
+    try:
+        a, b = str(p).split("..")
+        return (f"с {datetime.strptime(a, '%Y-%m-%d').strftime('%d.%m.%Y')} "
+                f"по {datetime.strptime(b, '%Y-%m-%d').strftime('%d.%m.%Y')}")
+    except ValueError:
+        return str(p)
 
 
 def _e(x) -> str:
@@ -60,7 +71,7 @@ def _reasons(why: str) -> str:
 
 
 def build_report(df: pd.DataFrame, clusters: pd.DataFrame, top: pd.DataFrame, resilience: pd.DataFrame,
-                 sensitivity: pd.DataFrame, requests: pd.DataFrame, meta: dict, out_path: Path) -> None:
+                 sensitivity: pd.DataFrame, requests: pd.DataFrame, meta: dict, out_path: Path) -> dict:
     n_seed, n_nodes = meta["n_seed"], meta["n_nodes"]
     roles = df["role"].value_counts()
     multi = clusters[(clusters["cluster_id"] != 0) & (clusters["n_seed"] > 1)].sort_values("max_priority", ascending=False)
@@ -112,7 +123,7 @@ def build_report(df: pd.DataFrame, clusters: pd.DataFrame, top: pd.DataFrame, re
     page = f"""<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Аналитическая справка: граф денег</title><style>{CSS}</style></head><body><div class="page">
 <h1>Аналитическая справка по сети переводов</h1>
-<div class="sub">Период {_e(meta['period'])} · {n_seed} seed, {meta['n_edges']} связей, {meta['n_tx']} транзакций ·
+<div class="sub">Период {_e(_period(meta['period']))} · {n_seed} seed, {meta['n_edges']} связей, {meta['n_tx']} транзакций ·
 сформировано {datetime.now().strftime('%d.%m.%Y %H:%M')} командой <code>python -m pipeline</code></div>
 <div class="warn">Роли и приоритеты являются <b>гипотезами для проверки</b>, а не выводами о виновности. Данные: только
 исходящие внутрибанковские переводы от 5 000 ₸ на 4 колена, без атрибутов клиентов.</div>
@@ -140,30 +151,81 @@ def build_report(df: pd.DataFrame, clusters: pd.DataFrame, top: pd.DataFrame, re
 <footer>Граф денег · HackAlem AI, кейс Freedom · команда git push --force. Воспроизведение: <code>python -m pipeline --data data --out out</code>.</footer>
 </div></body></html>"""
     Path(out_path).write_text(page, encoding="utf-8")
+    return {
+        "top1": str(first["gid"]),
+        "n_groups": int(len(multi)),
+        "share20": _pct1(float(r20["turnover_share_touched"])),
+        "lcc_before": _int(base_lcc),
+        "lcc_after": _int(int(r20["largest_component"])),
+        "overlap": overlap_min,
+        "cutoff": cut,
+    }
 
 
-INDEX = """<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Граф денег</title><style>
-body{{margin:0;background:#f4f6f8;color:#1f2933;font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}}
-.w{{max-width:760px;margin:48px auto;background:#fff;border-radius:12px;padding:32px 36px;box-shadow:0 1px 3px rgba(0,0,0,.08)}}
-h1{{margin:0 0 6px;font-size:26px}}.sub{{color:#616e7c}}.btns{{display:flex;gap:12px;margin:22px 0;flex-wrap:wrap}}
-.btn{{display:inline-block;padding:12px 18px;border-radius:8px;background:#146c43;color:#fff;text-decoration:none;font-weight:600}}
-.btn.alt{{background:#e8f3ec;color:#0f5132}}ul{{padding-left:18px}}a{{color:#1d4ed8}}code{{background:#f5f7fa;padding:1px 5px;border-radius:4px}}
-.warn{{background:#fff8e6;border:1px solid #f5d98b;border-radius:8px;padding:8px 12px;font-size:13px}}</style></head><body><div class="w">
+INDEX_CSS = """
+*{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#1f2933;font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.w{max-width:840px;margin:40px auto;background:#fff;border-radius:12px;padding:32px 36px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+h1{margin:0 0 6px;font-size:26px;line-height:1.25}h2{font-size:17px;margin:26px 0 6px}.sub{color:#616e7c;font-size:14px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0}.kpi{background:#f5f7fa;border-radius:10px;padding:12px 14px}
+.kpi b{display:block;font-size:26px;line-height:1.2;color:#0f5132}.kpi span{display:block;font-size:12.5px;line-height:1.4;color:#52606d}
+.btns{display:flex;gap:12px;margin:22px 0;flex-wrap:wrap}
+.btn{display:inline-block;padding:12px 18px;border-radius:8px;background:#146c43;color:#fff;text-decoration:none;font-weight:600}
+.btn.alt{background:#e8f3ec;color:#0f5132}ul{padding-left:18px;margin:6px 0}li{margin:7px 0}a{color:#1d4ed8}
+code{background:#f5f7fa;padding:1px 5px;border-radius:4px;font-size:13px}
+.gid{font-family:ui-monospace,Consolas,monospace;font-size:13px;text-decoration:none;white-space:nowrap}
+.warn{background:#fff8e6;border:1px solid #f5d98b;border-radius:8px;padding:8px 12px;font-size:13px;margin-top:18px}
+@media (max-width:640px){.w{margin:0;border-radius:0;padding:22px 16px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:22px}}
+"""
+
+
+def build_index(meta: dict, n_top: int, out_path: Path, facts: dict | None = None) -> None:
+    """Главная страница демо. Цифры берутся из результатов пайплайна (facts возвращает build_report)."""
+    f = facts or {}
+    kpis = [(_int(meta["n_nodes"]), "клиентов в сети: у каждого роль, кластер и приоритет"),
+            (str(n_top), "клиентов в списке на проверку, у каждого обоснование")]
+    if "n_groups" in f:
+        n = int(f["n_groups"])
+        kpis.append((str(n), f"{plural(n, 'группа', 'группы', 'групп')} с 2+ известными участниками"))
+    if "share20" in f:
+        kpis.append((f["share20"], "оборота сети затрагивает проверка топ-20"))
+    roles = ", ".join(C.ROLE_LABEL[k].split(",")[0].lower() for k in C.ROLES)
+    items = [
+        f"<b>Роли по прозрачным правилам.</b> {len(C.ROLES)} ролей: {_e(roles)}. У каждого клиента evidence с цифрами, "
+        f"все пороги в одном файле.",
+        "<b>Приоритет с объяснением.</b> Сумма пяти компонент с весами: роль, сколько известных участников ведут к клиенту, "
+        "оборот, посредничество, временные сигналы."
+        + (f" Первым проверять {_gid(f['top1'])}." if "top1" in f else ""),
+        "<b>Сценарий «Что если заблокировать».</b> На схеме сети можно исключить топ-5, 10, 20 или любого клиента из карточки"
+        + (f". Блокировка топ-20 сокращает крупнейшую связную часть сети с {f['lcc_before']} до {f['lcc_after']} клиентов."
+           if "lcc_after" in f else "."),
+    ]
+    if "overlap" in f:
+        items.append(f"<b>Проверка устойчивости.</b> Если сдвинуть любой порог ролей на шаг, топ-20 сохраняется "
+                     f"не меньше чем на {f['overlap']}%.")
+    if "cutoff" in f:
+        items.append(f"<b>Граница выборки.</b> {_int(int(f['cutoff']))} клиентов 4-го колена не записаны в конечные получатели: "
+                     f"по ним нужен запрос исходящих переводов (next_requests.csv).")
+    items += [
+        "<b>AI-ассистент</b> (запускается локально с ключом API): отвечает на вопросы по сети через инструменты графа, "
+        "каждый gid в ответе проверяется кодом, готовит черновик служебной записки.",
+        "<b>Масштаб.</b> Синтетический граф той же схемы в 175 тыс. узлов проходит основной расчёт за 71 с. "
+        "Замер и план до 1 млн узлов в README.",
+    ]
+    page = f"""<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Граф денег</title><style>{INDEX_CSS}</style></head><body><div class="w">
 <h1>Граф денег: кого проверять первым</h1>
 <div class="sub">HackAlem AI, трек «Финансы», кейс Freedom · команда git push --force</div>
-<p>Инструмент для AML-аналитика: {n_nodes} клиентов сети переводов получили роль, кластер и приоритет с числовым
-обоснованием. На вход {n_seed} известных участников, на выходе топ-{n_top} для проверки и готовые запросы данных.</p>
+<p>Инструмент для AML-аналитика. На входе {meta['n_seed']} известных участников и сеть их переводов {_e(_period(meta['period']))}.
+На выходе у каждого клиента роль, кластер и приоритет с числовым обоснованием, список на проверку и готовые запросы данных.</p>
+<div class="kpis">{''.join(f'<div class="kpi"><b>{_e(v)}</b><span>{_e(t)}</span></div>' for v, t in kpis)}</div>
 <div class="btns"><a class="btn" href="viewer.html">Схема сети</a><a class="btn alt" href="report.html">Аналитическая справка</a></div>
-<p>Выгрузки по схеме ТЗ: <a href="nodes_roles.csv">nodes_roles.csv</a> · <a href="clusters.csv">clusters.csv</a> ·
-<a href="top_nodes.csv">top_nodes.csv</a> · <a href="next_requests.csv">next_requests.csv</a></p>
+<h2>Что внутри</h2><ul>{''.join(f'<li>{x}</li>' for x in items)}</ul>
+<h2>Выгрузки по схеме ТЗ</h2>
+<p><a href="nodes_roles.csv">nodes_roles.csv</a> · <a href="clusters.csv">clusters.csv</a> · <a href="top_nodes.csv">top_nodes.csv</a> ·
+<a href="next_requests.csv">next_requests.csv</a></p>
 <p>Воспроизвести локально: <code>python -m pip install -r requirements.txt</code>, затем
 <code>python -m pipeline --data data --out out</code>. Код и README в репозитории команды.</p>
 <div class="warn">Роли и приоритеты являются гипотезами для проверки, а не выводами о виновности. Данные обезличены
 организаторами и используются только в рамках хакатона.</div>
 </div></body></html>"""
-
-
-def build_index(meta: dict, n_top: int, out_path: Path) -> None:
-    Path(out_path).write_text(INDEX.format(n_nodes=_int(meta["n_nodes"]), n_seed=meta["n_seed"], n_top=n_top),
-                              encoding="utf-8")
+    Path(out_path).write_text(page, encoding="utf-8")

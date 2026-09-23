@@ -21,7 +21,8 @@ from . import roles as R
 from .load import load, sanity
 
 
-def run(data_dir: Path, out_dir: Path, build_viewer: bool = True, log=print) -> dict:
+def run(data_dir: Path, out_dir: Path, build_viewer: bool = True, log=print, core_only: bool = False) -> dict:
+    """core_only: только роли, кластеры, приоритет и три CSV по схеме ТЗ (режим для очень больших графов)."""
     t0 = time.perf_counter()
     timings = {}
 
@@ -42,7 +43,7 @@ def run(data_dir: Path, out_dir: Path, build_viewer: bool = True, log=print) -> 
 
     feats = df.copy()
     df = R.assign_roles(df, G)
-    df["flags"] = df.apply(R.flags, axis=1)
+    df["flags"] = pd.Series([R.flags(r) for r in df.itertuples()], index=df.index)
     mark("roles")
 
     U = F.undirected(G)
@@ -56,6 +57,15 @@ def run(data_dir: Path, out_dir: Path, build_viewer: bool = True, log=print) -> 
     df["why"] = pd.Series(dict(zip(top["gid"], top["why"]))).reindex(df.index).fillna("")
     df["role_label"] = df["role"].map(C.ROLE_LABEL)
     clusters = CL.cluster_table(df, G)
+    if core_only:
+        EX.write_csvs(df, clusters, top, out_dir)
+        mark("export")
+        summary = {**meta, "mode": "core", "roles": {k: int((df["role"] == k).sum()) for k in C.ROLES},
+                   "clusters": int(len(clusters)), "timings_s": timings}
+        (out_dir / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
+        log("Роли: " + ", ".join(f"{k} {v}" for k, v in summary["roles"].items()))
+        log(f"Готово за {timings['export']} с (режим core). Выгрузки: nodes_roles.csv, clusters.csv, top_nodes.csv")
+        return summary
     stab = RB.cluster_stability(U, cluster_of)
     clusters["stability"] = clusters["cluster_id"].map(stab)
     df["card"] = CA.all_cards(df, G)
@@ -76,9 +86,9 @@ def run(data_dir: Path, out_dir: Path, build_viewer: bool = True, log=print) -> 
     sens = RB.sensitivity(feats, G, df)
     sens.to_csv(out_dir / "sensitivity.csv", index=False)
     mark("sensitivity")
-    RP.build_report(df, clusters, top, pd.read_csv(out_dir / "resilience.csv"), sens,
-                    pd.read_csv(out_dir / "next_requests.csv"), meta, out_dir / "report.html")
-    RP.build_index(meta, len(top), out_dir / "index.html")
+    facts = RP.build_report(df, clusters, top, pd.read_csv(out_dir / "resilience.csv"), sens,
+                            pd.read_csv(out_dir / "next_requests.csv"), meta, out_dir / "report.html")
+    RP.build_index(meta, len(top), out_dir / "index.html", facts)
     mark("report")
 
     viewer_msg = EX.try_build_viewer(out_dir / "graph.json", out_dir / "viewer.html") if build_viewer else "экран: пропущен флагом"

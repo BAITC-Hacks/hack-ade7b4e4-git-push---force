@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from itertools import islice
 
 import networkx as nx
 import numpy as np
@@ -77,7 +78,7 @@ def recurring_routes(tx: pd.DataFrame) -> pd.DataFrame:
 
 def cycles(G: nx.DiGraph) -> list[list[int]]:
     """Возвратные потоки: простые циклы длиной до CYCLE_MAX_LEN."""
-    return [c for c in nx.simple_cycles(G, length_bound=C.CYCLE_MAX_LEN)]
+    return list(islice(nx.simple_cycles(G, length_bound=C.CYCLE_MAX_LEN), C.CYCLES_LIMIT))
 
 
 def node_features(G: nx.DiGraph, nodes: pd.DataFrame, tx: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
@@ -109,7 +110,11 @@ def node_features(G: nx.DiGraph, nodes: pd.DataFrame, tx: pd.DataFrame) -> tuple
     df["max_in_share"] = pd.Series(max_in_share)
     df["max_out_share"] = pd.Series(max_out_share)
 
-    df["betweenness"] = pd.Series(nx.betweenness_centrality(G, normalized=True))
+    if len(G) > C.LARGE_GRAPH:  # точный расчёт O(n*m) на больших графах слишком долгий: берём выборку источников
+        bc = nx.betweenness_centrality(G, k=min(C.BETWEENNESS_SAMPLE, len(G)), normalized=True, seed=C.SEED)
+    else:
+        bc = nx.betweenness_centrality(G, normalized=True)
+    df["betweenness"] = pd.Series(bc)
     try:  # справочная метрика, в правила не входит; в networkx 3.x нужен scipy
         df["pagerank"] = pd.Series(nx.pagerank(G, weight="sum_kzt", alpha=0.85))
     except ImportError:

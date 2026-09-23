@@ -20,8 +20,10 @@ def main() -> int:
     ap.add_argument("--data", default="data", help="папка с edges.parquet, nodes.parquet, transactions.parquet")
     ap.add_argument("--out", default="out", help="куда писать выгрузки")
     ap.add_argument("--no-viewer", action="store_true", help="не собирать out/viewer.html")
+    ap.add_argument("--core", action="store_true",
+                    help="только роли, кластеры, приоритет и три CSV (для очень больших графов)")
     a = ap.parse_args()
-    run(Path(a.data), Path(a.out), build_viewer=not a.no_viewer)
+    run(Path(a.data), Path(a.out), build_viewer=not a.no_viewer, core_only=a.core)
     return 0
 
 

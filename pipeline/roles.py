@@ -91,7 +91,7 @@ def _base_role(r: pd.Series) -> tuple[str, float, str, str]:
         return "terminal", score, text, "keeps"
 
     if r.cutoff:
-        prob = r.get("forward_prob", np.nan)
+        prob = getattr(r, "forward_prob", np.nan)
         prob_part = (f" Похожие узлы 1-3 колена пересылают дальше в {pct(prob)} случаев."
                      if prob is not None and not (isinstance(prob, float) and math.isnan(prob)) else "")
         text = (f"4-е колено: исходящие не собирались (обрыв выборки). Вход {kzt(r.in_kzt)} от "
@@ -129,8 +129,9 @@ def assign_roles(df: pd.DataFrame, G: nx.DiGraph) -> pd.DataFrame:
     fp = cutoff_forward_prob(df)
     df.loc[fp.index, "forward_prob"] = fp
 
-    out = df.apply(_base_role, axis=1, result_type="expand")
-    out.columns = ["role", "role_score", "evidence", "rule"]
+    # itertuples в десятки раз быстрее apply по строкам: важно для графов в сотни тысяч узлов
+    out = pd.DataFrame([_base_role(r) for r in df.itertuples()], index=df.index,
+                       columns=["role", "role_score", "evidence", "rule"])
     df = df.join(out)
 
     # второй проход: получатель денег от нескольких точек консолидации = кандидат в организаторы
@@ -151,10 +152,9 @@ def assign_roles(df: pd.DataFrame, G: nx.DiGraph) -> pd.DataFrame:
     # не seed, но отдаёт больше, чем получил в выборке: входящие извне выборки не видны (ловушка ТЗ)
     extra = "Отдаёт больше, чем получил в выборке: есть источники вне данных."
     mask = (~df["is_seed"]) & (df["pass_through"] > C.TRANSIT_HI) & df["role"].isin(["coordinator", "distributor", "peripheral"])
-    for n in df.index[mask]:
-        text = f"{df.at[n, 'evidence']} {extra}"
-        if len(text) <= 200:
-            df.at[n, "evidence"] = text
+    longer = df.loc[mask, "evidence"] + " " + extra  # векторно: присваивание по одной строке на больших графах O(n^2)
+    longer = longer[longer.str.len() <= 200]
+    df.loc[longer.index, "evidence"] = longer
     df["evidence"] = df["evidence"].map(cut)
     df["role_score"] = df["role_score"].astype(float).round(3)
     return df

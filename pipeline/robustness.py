@@ -57,7 +57,7 @@ def sensitivity(df_features: pd.DataFrame, G: nx.DiGraph, base: pd.DataFrame) ->
             setattr(C, param, v)
             try:
                 d = R.assign_roles(df_features, G)
-                d["flags"] = d.apply(R.flags, axis=1)
+                d["flags"] = pd.Series([R.flags(r) for r in d.itertuples()], index=d.index)
                 d["priority_score"], _ = P.score(d)
             finally:
                 setattr(C, param, original)
