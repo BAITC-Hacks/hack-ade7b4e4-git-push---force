@@ -24,7 +24,7 @@ from typing import Any, Callable, Type, TypeVar
 from pydantic import BaseModel
 
 from app import config
-from app import tools as toolbox
+from app import graph_store as toolbox
 from app.pii import mask_pii
 from app.router import Route, choose_tier
 
@@ -120,10 +120,32 @@ def run_structured(
     tools: list[str] | None = None,
     task: str = "answer",
     force_tier: str | None = None,
+    tool_provider: Any = None,
+    use_cache: bool = True,
+    use_demo_cache: bool = True,
+    protected_gids: set[str] | None = None,
 ) -> tuple[T, dict]:
     """Main entry point. Returns (parsed answer, meta for UI and logs)."""
     t0 = time.perf_counter()
+    # Graph identifiers may resemble card numbers. Preserve only identifiers
+    # already verified against the graph, while still masking actual PII.
+    placeholders: dict[str, str] = {}
+    if protected_gids:
+        import uuid
+
+        nonce = uuid.uuid4().hex.translate(str.maketrans("0123456789", "ghijklmnop"))
+        def protect(match: re.Match) -> str:
+            gid = match.group(0)
+            if gid not in protected_gids:
+                return gid
+            token = f"GRAPHNODE{nonce}X{len(placeholders)}X"
+            placeholders[token] = gid
+            return token
+
+        user_text = re.sub(r"(?<![\w-])[A-Za-z0-9_-]+(?![\w-])", protect, user_text)
     masked, pii = mask_pii(user_text)
+    for token, gid in placeholders.items():
+        masked = masked.replace(token, gid)
     route = Route(force_tier, "tier задан вручную", 0) if force_tier else choose_tier(task, masked)
     meta: dict[str, Any] = {
         "mode": mode(),
@@ -140,10 +162,10 @@ def run_structured(
     }
 
     if meta["mode"] == "demo":
-        return _from_demo(masked, schema, stub, meta, t0)
+        return _from_demo(masked, schema, stub, meta, t0, use_demo_cache)
 
     key = _cache_key(route.tier, instructions, masked, schema, tools)
-    hit = _memory_cache.get(key)
+    hit = _memory_cache.get(key) if use_cache else None
     if hit:
         answer, old = hit
         meta.update(cache="memory", tools_called=old["tools_called"], model=old["model"],
@@ -151,10 +173,10 @@ def run_structured(
         return schema.model_validate(answer), _finish(meta, t0)
 
     try:
-        parsed, call = _call(route.tier, instructions, masked, schema, tools)
+        parsed, call = _call(route.tier, instructions, masked, schema, tools, tool_provider)
         meta["calls"].append(call)
         if route.tier == "fast" and not force_tier and _confidence(parsed) < config.ESCALATE_BELOW:
-            parsed, call2 = _call("smart", instructions, masked, schema, tools)
+            parsed, call2 = _call("smart", instructions, masked, schema, tools, tool_provider)
             meta["calls"].append(call2)
             meta["escalated"] = True
             meta["tier"] = "smart"
@@ -162,13 +184,14 @@ def run_structured(
     except Exception as exc:  # never crash the demo
         meta["mode"] = "fallback"
         meta["error"] = f"{type(exc).__name__}: {str(exc)[:300]}"
-        return _from_demo(masked, schema, stub, meta, t0)
+        return _from_demo(masked, schema, stub, meta, t0, use_demo_cache)
 
     for c in meta["calls"]:
         meta["tools_called"].extend(c["tools_called"])
     meta["model"] = meta["calls"][-1]["model"]
     finished = _finish(meta, t0)
-    _memory_cache[key] = (parsed.model_dump(), copy.deepcopy(finished))
+    if use_cache:
+        _memory_cache[key] = (parsed.model_dump(), copy.deepcopy(finished))
     return parsed, finished
 
 
@@ -186,13 +209,15 @@ def stats() -> dict:
 # ---------------- internals ----------------
 
 
-def _call(tier: str, instructions: str, text: str, schema: Type[T], tool_names: list[str] | None) -> tuple[T, dict]:
+def _call(tier: str, instructions: str, text: str, schema: Type[T], tool_names: list[str] | None,
+          tool_provider: Any = None) -> tuple[T, dict]:
     model = config.MODEL_SMART if tier == "smart" else config.MODEL_FAST
     effort = config.REASONING_SMART if tier == "smart" else config.REASONING_FAST
     max_out = config.MAX_OUTPUT_TOKENS_SMART if tier == "smart" else config.MAX_OUTPUT_TOKENS_FAST
 
     client = get_client()
-    tool_defs = toolbox.openai_tools(tool_names)
+    provider = tool_provider if tool_provider is not None else toolbox.GraphTools(toolbox.GraphStore.from_file())
+    tool_defs = provider.openai_tools(tool_names)
     base: dict[str, Any] = {
         "model": model,
         "instructions": instructions,
@@ -217,7 +242,7 @@ def _call(tier: str, instructions: str, text: str, schema: Type[T], tool_names: 
             break
         outputs = []
         for fc in fcalls:
-            result = toolbox.call_tool(fc.name, fc.arguments)
+            result = provider.call_tool(fc.name, fc.arguments)
             called.append({"name": fc.name, "arguments": _safe_json(fc.arguments), "result": result})
             outputs.append({
                 "type": "function_call_output",
@@ -250,8 +275,9 @@ def _call(tier: str, instructions: str, text: str, schema: Type[T], tool_names: 
     }
 
 
-def _from_demo(masked: str, schema: Type[T], stub: Callable[[str], T], meta: dict, t0: float) -> tuple[T, dict]:
-    entry = load_demo_cache().get(normalize(masked))
+def _from_demo(masked: str, schema: Type[T], stub: Callable[[str], T], meta: dict, t0: float,
+               use_demo_cache: bool = True) -> tuple[T, dict]:
+    entry = load_demo_cache().get(normalize(masked)) if use_demo_cache else None
     if entry:
         saved = entry.get("meta") or {}
         meta["cache"] = "demo"

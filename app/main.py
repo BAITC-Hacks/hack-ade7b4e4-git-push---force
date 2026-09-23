@@ -1,86 +1,125 @@
-"""FastAPI entry point. Local: python -m uvicorn app.main:app --reload
-Vercel finds `app` in app/main.py automatically.
-"""
+"""FastAPI chat and read-only graph API. Servers are started by the user."""
 from __future__ import annotations
 
-import sys
+import os
 import threading
 import time
 from collections import defaultdict, deque
+from contextlib import asynccontextmanager
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-if str(ROOT) not in sys.path:  # makes `from app import ...` work however the host loads us
-    sys.path.insert(0, str(ROOT))
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field, field_validator
 
-from fastapi import FastAPI, HTTPException, Request  # noqa: E402
-from fastapi.staticfiles import StaticFiles  # noqa: E402
-from pydantic import BaseModel, Field  # noqa: E402
-
-from app import agent, config, data, llm  # noqa: E402
-
-app = FastAPI(title=config.APP_TITLE)
-
-_hits: dict[str, deque] = defaultdict(deque)
-_hits_lock = threading.Lock()
-
-
-def _rate_limited(request: Request) -> bool:
-    ip = (request.headers.get("x-forwarded-for") or (request.client.host if request.client else "?")).split(",")[0]
-    now = time.time()
-    with _hits_lock:
-        q = _hits[ip]
-        while q and now - q[0] > 60:
-            q.popleft()
-        if len(q) >= config.RATE_LIMIT_PER_MIN:
-            return True
-        q.append(now)
-    return False
+from app import assistant, config
+from app.graph_store import GraphStore
 
 
 class AskIn(BaseModel):
-    message: str = Field(min_length=1, max_length=4000)
-    client_id: str | None = Field(default=None, max_length=64)
+    question: str = Field(min_length=1, max_length=4000)
+
+    @field_validator("question")
+    @classmethod
+    def nonempty(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Введите вопрос")
+        return value.strip()
 
 
-@app.get("/api/health")
-def health() -> dict:
-    return {
-        "ok": True,
-        "mode": llm.mode(),
-        "models": {"fast": config.MODEL_FAST, "smart": config.MODEL_SMART},
-        "title": config.APP_TITLE,
-    }
+def create_app(graph_path: str | Path | None = None) -> FastAPI:
+    path = Path(graph_path or os.getenv("GRAPH_JSON", str(config.ROOT / "out" / "graph.json")))
+    hits: dict[str, deque] = defaultdict(deque)
+    lock = threading.Lock()
+
+    def load_graph(application: FastAPI) -> None:
+        try:
+            application.state.graph = GraphStore.from_file(path)
+        except (OSError, ValueError):
+            application.state.graph = None
+
+    @asynccontextmanager
+    async def lifespan(application: FastAPI):
+        load_graph(application)
+        yield
+
+    application = FastAPI(title="Граф денег — ассистент аналитика", lifespan=lifespan)
+    application.state.graph = None
+
+    def graph() -> GraphStore:
+        # A pipeline export may arrive after startup; retry only if missing.
+        if application.state.graph is None:
+            with lock:
+                if application.state.graph is None:
+                    load_graph(application)
+        if application.state.graph is None:
+            raise HTTPException(503, "Граф пока недоступен. Дождитесь выгрузки данных командой.")
+        return application.state.graph
+
+    @application.get("/")
+    def index():
+        return FileResponse(config.STATIC_DIR / "index.html")
+
+    @application.get("/api/health")
+    def health():
+        try:
+            store = graph()
+        except HTTPException:
+            store = None
+        return {"ok": store is not None, "graph_available": store is not None,
+                "n_nodes": len(store.nodes) if store else 0,
+                "n_edges": len(store.edges) if store else 0, "llm_enabled": assistant.llm_enabled()}
+
+    @application.get("/api/top")
+    def top(n: int = Query(10, ge=1, le=100)):
+        return graph().top_nodes(n)
+
+    @application.post("/api/ask")
+    def ask(body: AskIn, request: Request):
+        store = graph()
+        ip = request.client.host if request.client else "local"
+        now = time.monotonic()
+        with lock:
+            expired = [key for key, queue in hits.items() if not queue or now - queue[-1] >= 60]
+            for key in expired:
+                del hits[key]
+            queue = hits[ip]
+            while queue and now - queue[0] >= 60:
+                queue.popleft()
+            if len(queue) >= config.RATE_LIMIT_PER_MIN:
+                raise HTTPException(429, "Слишком много запросов. Подождите минуту.")
+            queue.append(now)
+        answer, info = assistant.ask(body.question, store)
+        public_meta = {key: info[key] for key in ("mode", "tier", "model", "latency_ms", "cost_usd")
+                       if key in info}
+        public_meta["removed_gid_count"] = len(info.get("guardrails", []))
+        return {**answer.model_dump(), "tools": info.get("tools", []), "meta": public_meta}
+
+    @application.get("/api/node/{gid}")
+    def node(gid: str):
+        store = graph()
+        if gid not in store.nodes:
+            raise HTTPException(404, "Узел не найден в текущем графе")
+        result = store.neighbors(gid, direction="both", limit=100)
+        return {**result, "viewer_url": assistant.viewer_url(gid)}
+
+    @application.get("/api/card/{gid}")
+    def card(gid: str):
+        store = graph()
+        if gid not in store.nodes:
+            raise HTTPException(404, "Узел не найден в текущем графе")
+        return assistant.get_card(gid, store)
+
+    @application.get("/viewer")
+    def viewer():
+        viewer_path = path.parent / "viewer.html"
+        if not viewer_path.is_file():
+            raise HTTPException(404, "Схема ещё не подготовлена командой")
+        return FileResponse(viewer_path, media_type="text/html")
+
+    application.mount("/static", StaticFiles(directory=config.STATIC_DIR, check_dir=False), name="static")
+    return application
 
 
-@app.get("/api/meta")
-def meta() -> dict:
-    return {
-        "title": config.APP_TITLE,
-        "mode": llm.mode(),
-        "usd_kzt": config.USD_KZT,
-        "demo_prompts": data.demo_prompts(),
-        "models": {"fast": config.MODEL_FAST, "smart": config.MODEL_SMART},
-    }
-
-
-@app.post("/api/ask")
-def ask(body: AskIn, request: Request) -> dict:
-    if _rate_limited(request):
-        raise HTTPException(status_code=429, detail="Слишком много запросов, подождите минуту")
-    answer, info = agent.ask(body.message, body.client_id)
-    return {"answer": answer.model_dump(), "meta": info}
-
-
-@app.get("/api/stats")
-def stats() -> dict:
-    return llm.stats()
-
-
-@app.get("/api/clients")
-def clients() -> list[dict]:
-    return data.clients()[:100]
-
-
-# Keep this last: API routes above win over static files.
-app.mount("/", StaticFiles(directory=str(config.STATIC_DIR), html=True), name="ui")
+app = create_app()

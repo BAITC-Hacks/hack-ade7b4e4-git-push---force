@@ -3,67 +3,41 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Fintech AI Agent</title>
-  <link rel="stylesheet" href="/style.css">
+  <meta name="color-scheme" content="light">
+  <title>Граф денег — ассистент аналитика</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/app.js" defer></script>
 </head>
 <body>
-  <header class="top">
-    <div class="brand">
-      <h1 id="title">Fintech AI Agent</h1>
-      <p class="sub">AI-агент с маршрутизацией моделей, инструментами и объяснимыми решениями</p>
-    </div>
-    <div class="status">
-      <span id="mode" class="badge">...</span>
-      <span id="models" class="muted small"></span>
-    </div>
-  </header>
-
-  <main class="grid">
-    <section class="panel chat" aria-label="Диалог с агентом">
-      <div class="chips" id="prompts" aria-label="Примеры запросов"></div>
-      <div id="log" class="log" aria-live="polite">
-        <p class="empty">Выберите пример сверху или задайте свой вопрос.</p>
-      </div>
-      <form id="form" class="composer">
-        <label class="sr" for="client">Клиент</label>
-        <select id="client"><option value="">Без клиента</option></select>
-        <label class="sr" for="msg">Вопрос</label>
-        <textarea id="msg" rows="2" placeholder="Например: проверь операцию T-DEMO-1" required></textarea>
-        <button id="send" type="submit">Отправить</button>
-      </form>
-    </section>
-
-    <aside class="side">
-      <section class="panel" aria-labelledby="h-decision">
-        <h2 id="h-decision">Решение</h2>
-        <div id="decision" class="muted">Пока нет ответа.</div>
+  <div class="workspace">
+    <aside class="sidebar" aria-label="Навигация и данные">
+      <a class="brand" href="/" aria-label="Граф денег — главная"><span class="brand-mark" aria-hidden="true">◈</span><span>Граф денег<small>AML / ANALYST WORKSPACE</small></span></a>
+      <div class="nav-item active"><span aria-hidden="true">✦</span> Ассистент</div>
+      <a class="nav-item" href="/viewer" target="_blank" rel="noopener"><span aria-hidden="true">⌘</span> Схема переводов <span class="external" aria-hidden="true">↗</span></a>
+      <section class="dataset" aria-labelledby="dataset-title">
+        <div class="section-label" id="dataset-title">Данные графа</div>
+        <div id="graph-status" class="status" role="status"><span class="status-dot"></span><span>Проверяем граф…</span></div>
+        <div class="dataset-metrics"><div><strong id="node-count">—</strong><span>узлов</span></div><div><strong id="edge-count">—</strong><span>связей</span></div></div>
+        <button class="text-button" id="refresh-button" type="button">Обновить данные <span aria-hidden="true">↻</span></button>
       </section>
-
-      <section class="panel" aria-labelledby="h-how">
-        <h2 id="h-how">Как получен ответ</h2>
-        <div id="how" class="muted">Модель, маршрут, инструменты, токены, стоимость.</div>
-        <details id="sent" hidden>
-          <summary>Что ушло в модель</summary>
-          <pre id="sent-text"></pre>
-        </details>
-      </section>
-
-      <section class="panel" aria-labelledby="h-session">
-        <h2 id="h-session">Сессия</h2>
-        <div class="stats">
-          <div><b id="s-req">0</b><span>запросов</span></div>
-          <div><b id="s-fast">-</b><span>на быстрой модели</span></div>
-          <div><b id="s-cost">$0</b><span>потрачено</span></div>
-          <div><b id="s-lat">-</b><span>средняя задержка</span></div>
-        </div>
-      </section>
+      <section class="priority-section" aria-labelledby="priority-title"><div class="section-label" id="priority-title">Приоритет проверки</div><p class="section-description">Узлы с наибольшим приоритетом</p><div id="top-nodes" class="top-nodes"><p class="muted small">Загрузка…</p></div></section>
+      <div class="sidebar-note"><span class="note-symbol" aria-hidden="true">i</span><p>Роли и выводы — гипотезы для проверки, а не утверждения о виновности.</p></div>
     </aside>
-  </main>
-
-  <footer class="foot muted small">
-    Синтетические данные. Персональные данные маскируются до отправки в модель. Решения с риском подтверждает сотрудник.
-  </footer>
-  <div id="toast" class="toast" role="status" hidden></div>
-  <script src="/app.js"></script>
+    <main class="main">
+      <header class="page-header"><div><div class="eyebrow">РАБОЧЕЕ МЕСТО АНАЛИТИКА</div><h1>Ассистент по графу</h1></div><span id="llm-status" class="mode-badge">Подключение…</span></header>
+      <div id="notice" class="notice" role="status" hidden></div>
+      <div class="content-grid">
+        <section class="chat-panel panel" aria-labelledby="chat-title">
+          <header class="panel-header"><div class="panel-title"><span class="assistant-icon" aria-hidden="true">✦</span><div><h2 id="chat-title">Диалог с данными</h2><p>Вопрос → факты → узлы графа</p></div></div><span class="local-label">KZT</span></header>
+          <div id="messages" class="messages" role="log" aria-label="История диалога" aria-live="polite" aria-relevant="additions">
+            <div id="welcome" class="welcome"><div class="welcome-symbol" aria-hidden="true">✦</div><h3>Начните с одного вопроса</h3><p>Посмотрите карточку узла или найдите общих получателей переводов. Ответы опираются на данные графа.</p><div id="suggestions" class="suggestions"></div></div>
+          </div>
+          <form id="ask-form" class="composer"><label class="sr-only" for="question">Вопрос по графу</label><div class="input-row"><textarea id="question" name="question" rows="2" maxlength="4000" placeholder="Задайте вопрос по графу переводов…" required></textarea><button id="send-button" class="send-button" type="submit" aria-label="Отправить вопрос"><span aria-hidden="true">↑</span></button></div><div class="composer-hint"><span>Enter — отправить · Shift + Enter — новая строка</span><span>Только данные графа</span></div></form>
+        </section>
+        <aside class="card-panel panel" aria-labelledby="card-title"><header class="panel-header"><div><div class="eyebrow">ДЕТАЛИ</div><h2 id="card-title">Карточка узла</h2></div><span aria-hidden="true" class="card-symbol">◎</span></header><form id="node-form" class="node-search"><label class="sr-only" for="node-gid">Идентификатор узла</label><input id="node-gid" name="gid" placeholder="Найти по gid" type="text" autocomplete="off" spellcheck="false" required><button type="submit" aria-label="Открыть карточку узла">↗</button></form><div id="node-card" class="node-card" aria-live="polite"><div class="empty-card"><span aria-hidden="true">◎</span><h3>Все связи в одной карточке</h3><p>Выберите узел из списка приоритетов, ответа ассистента или найдите его по gid.</p></div></div></aside>
+      </div>
+      <footer class="page-footer"><span>Граф денег / HackAlem</span><span>Проверяемые ответы. Прослеживаемые связи.</span></footer>
+    </main>
+  </div>
 </body>
 </html>
