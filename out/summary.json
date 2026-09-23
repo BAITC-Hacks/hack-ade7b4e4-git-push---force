@@ -25,15 +25,15 @@
   "cluster_stability_median": 1.0,
   "timings_s": {
     "load": 0.06,
-    "features": 2.08,
-    "roles": 2.14,
-    "clusters": 2.24,
-    "priority": 3.34,
-    "layout": 4.49,
-    "export": 5.02,
-    "sensitivity": 5.89,
-    "report": 5.93,
-    "viewer": 6.03
+    "features": 2.15,
+    "roles": 2.21,
+    "clusters": 2.31,
+    "priority": 3.44,
+    "layout": 4.52,
+    "export": 5.04,
+    "sensitivity": 5.83,
+    "report": 5.86,
+    "viewer": 5.97
   },
   "viewer": "экран: out\\viewer.html"
 }

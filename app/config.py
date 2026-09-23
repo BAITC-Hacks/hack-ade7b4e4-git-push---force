@@ -42,7 +42,7 @@ MAX_OUTPUT_TOKENS_SMART = int(_env("MAX_OUTPUT_TOKENS_SMART", "8000"))
 MAX_TOOL_ROUNDS = int(_env("MAX_TOOL_ROUNDS", "4"))
 OPENAI_TIMEOUT = float(_env("OPENAI_TIMEOUT", "45"))
 # Shared by every model/tool round and optional tier escalation in one answer.
-OPENAI_TOTAL_TIMEOUT = float(_env("OPENAI_TOTAL_TIMEOUT", "18"))
+OPENAI_TOTAL_TIMEOUT = float(_env("OPENAI_TOTAL_TIMEOUT", "40"))
 
 # A fast-tier answer with confidence below this is re-asked on the smart tier.
 ESCALATE_BELOW = float(_env("ESCALATE_BELOW", "0.6"))

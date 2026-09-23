@@ -336,7 +336,7 @@
     try {
       const result = await api("/api/ask", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, use_llm: useLlm })
-      }, { controller, timeoutMs: 20000 });
+      }, { controller, timeoutMs: 45000 });
       if (request !== state.askRequest) return;
       if (useLlm && result.meta && ["fallback", "offline", "demo"].includes(result.meta.mode)) {
         switchToRules("Ответ подготовлен без модели. Следующие вопросы также выполняются без неё.");

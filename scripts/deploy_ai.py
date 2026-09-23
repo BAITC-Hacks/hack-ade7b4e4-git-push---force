@@ -21,6 +21,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DST = ROOT / "deploy" / "graf-deneg-ai"
 ENV_KEYS = ("OPENAI_API_KEY", "OPENAI_BASE_URL", "MODEL_FAST", "MODEL_SMART")
+# Замер на Vercel: ответ быстрой модели с инструментами занимал около 15 с. Низкое усилие рассуждения
+# ускоряет ответ, общий лимит 40 с покрывает раунды инструментов и эскалацию. Значения из .env важнее.
+DEPLOY_DEFAULTS = {"REASONING_FAST": "low", "REASONING_SMART": "low", "OPENAI_TOTAL_TIMEOUT": "40"}
 REQUIREMENTS = ["fastapi>=0.115", "openai>=2.0", "pydantic>=2.7", "python-dotenv>=1.0", "httpx>=0.27"]
 VERCEL_JSON = {"functions": {"app/main.py": {"maxDuration": 60, "includeFiles": "{static,out}/**"}}}
 
@@ -55,6 +58,8 @@ def env_flags() -> list[str]:
     for key in ENV_KEYS:
         if values.get(key):
             flags += ["--env", f"{key}={values[key]}"]
+    for key, default in DEPLOY_DEFAULTS.items():
+        flags += ["--env", f"{key}={values.get(key) or default}"]
     names = [k for k in ENV_KEYS if values.get(k)]
     print("Переменные для Vercel: " + (", ".join(names) if names else "нет, ассистент будет работать без модели"))
     return flags
