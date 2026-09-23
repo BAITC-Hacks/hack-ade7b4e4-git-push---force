@@ -16,6 +16,7 @@ from . import features as F
 from . import layout as L
 from . import priority as P
 from . import robustness as RB
+from . import report as RP
 from . import roles as R
 from .load import load, sanity
 
@@ -75,6 +76,10 @@ def run(data_dir: Path, out_dir: Path, build_viewer: bool = True, log=print) -> 
     sens = RB.sensitivity(feats, G, df)
     sens.to_csv(out_dir / "sensitivity.csv", index=False)
     mark("sensitivity")
+    RP.build_report(df, clusters, top, pd.read_csv(out_dir / "resilience.csv"), sens,
+                    pd.read_csv(out_dir / "next_requests.csv"), meta, out_dir / "report.html")
+    RP.build_index(meta, len(top), out_dir / "index.html")
+    mark("report")
 
     viewer_msg = EX.try_build_viewer(out_dir / "graph.json", out_dir / "viewer.html") if build_viewer else "экран: пропущен флагом"
     mark("viewer")
@@ -99,5 +104,5 @@ def run(data_dir: Path, out_dir: Path, build_viewer: bool = True, log=print) -> 
         f"Обрыв 4-го колена: {summary['cutoff_nodes']}. Циклов до {C.CYCLE_MAX_LEN}: {summary['cycles_len_le_6']}. "
         f"Устойчивых маршрутов: {summary['recurring_routes']}.")
     log(viewer_msg)
-    log(f"Готово за {timings['viewer']} с. Выгрузки в {out_dir}/: nodes_roles.csv, clusters.csv, top_nodes.csv, graph.json")
+    log(f"Готово за {timings['viewer']} с. Выгрузки в {out_dir}/: nodes_roles.csv, clusters.csv, top_nodes.csv, graph.json, report.html")
     return summary

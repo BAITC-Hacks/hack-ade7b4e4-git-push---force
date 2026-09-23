@@ -12,3 +12,4 @@ _*.bat
 Claude outputs/
 !_run.bat
 !_assistant.bat
+deploy/

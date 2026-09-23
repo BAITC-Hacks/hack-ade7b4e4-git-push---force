@@ -65,6 +65,7 @@ ROLES = list(ROLE_WEIGHT)
 
 def role_rules() -> dict[str, str]:
     """Правила ролей человеческим языком. Порядок проверки сверху вниз, первое совпадение побеждает."""
+    min_kzt = f"{TERMINAL_MIN_KZT:,}".replace(",", " ")
     return {
         "coordinator": (f"Собирает от {HUB_IN}+ плательщиков и рассылает {HUB_OUT}+ получателям, "
                         f"или получает от {COORD_FROM_CONS}+ точек консолидации"),
@@ -74,7 +75,7 @@ def role_rules() -> dict[str, str]:
         "transit": (f"Не seed, отдаёт дальше {int(TRANSIT_LO * 100)}-{int(TRANSIT_HI * 100)}% полученного; "
                     f"флаг «сквозной», если {int(FAST_SHARE * 100)}%+ ушло за {FAST_DAYS} дня"),
         "terminal": (f"Колено 0-3 (не обрыв выборки), дальше уходит не больше {int(TERMINAL_PT * 100)}% полученного, "
-                     f"получено от {TERMINAL_MIN_KZT:,} KZT или от {TERMINAL_MIN_PAYERS}+ плательщиков").replace(",", " "),
+                     f"получено от {min_kzt} ₸ или от {TERMINAL_MIN_PAYERS}+ плательщиков"),
         "peripheral": ("Не подходит ни под одно правило. Сюда же узлы 4-го колена без исходящих: "
                        "это обрыв выгрузки, роль по данным не определить"),
     }

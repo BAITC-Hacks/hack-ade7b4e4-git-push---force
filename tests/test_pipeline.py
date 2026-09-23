@@ -86,3 +86,11 @@ def test_deterministic(out, tmp_path):
     a = pd.read_csv(d / "nodes_roles.csv").sort_values("gid").reset_index(drop=True)
     b = pd.read_csv(tmp_path / "nodes_roles.csv").sort_values("gid").reset_index(drop=True)
     assert a[["gid", "role", "cluster_id"]].equals(b[["gid", "role", "cluster_id"]])
+
+
+def test_report(out):
+    d, _ = out
+    html = (d / "report.html").read_text(encoding="utf-8")
+    top1 = str(pd.read_csv(d / "top_nodes.csv")["gid"].iloc[0])
+    assert top1 in html and "гипотез" in html.lower()
+    assert "http://" not in html and "https://" not in html  # справка работает без интернета

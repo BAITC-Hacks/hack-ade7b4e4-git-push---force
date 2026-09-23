@@ -61,7 +61,8 @@ def _hypothesis(cid: int, g: pd.DataFrame, internal: float, key: int | None) -> 
         return cut(f"Гипотеза: транзитная цепочка из {n} узлов, {tr} транзитных счетов; {n_seed} seed, "
                    f"оборот {kzt(internal)}.", 300)
     if term:
-        return cut(f"Гипотеза: периферия, деньги оседают у {term} конечных получателей; {n_seed} seed, "
+        return cut(f"Гипотеза: периферия, деньги оседают у {term} "
+                   f"{plural(term, 'конечного получателя', 'конечных получателей', 'конечных получателей')}; {n_seed} seed, "
                    f"оборот {kzt(internal)}. Низкий приоритет.", 300)
     return cut(f"Гипотеза: периферийная группа из {n} узлов без выраженных ролей; {n_seed} seed.", 300)
 
