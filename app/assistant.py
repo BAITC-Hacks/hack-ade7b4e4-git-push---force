@@ -61,6 +61,9 @@ DRAFT_PROMPT = SYSTEM_PROMPT + """
 """
 
 
+SMALL_NUM = re.compile(r"^\d{1,4}([-–]\d{1,4})?$")
+
+
 def viewer_url(gid: str) -> str:
     return "/viewer#gid=" + quote(gid, safe="")
 
@@ -86,6 +89,7 @@ def enforce_gids(answer: AssistantAnswer, store: GraphStore,
         r"[<\"']?([A-Za-z0-9_-]+)", text, re.I))
     tokens = set(re.findall(r"[\w-]+", text))
     candidates.update(tokens.intersection(store.nodes))
+    candidates = {c for c in candidates if not SMALL_NUM.match(c)}
     removed = sorted(candidates - allowed)
     for gid in sorted(removed, key=len, reverse=True):
         text = re.sub(r"\[[^\]]*\]\([^\s)]*#gid=" + re.escape(gid) + r"\)",

@@ -198,6 +198,25 @@ def test_gid_guard_checks_text_list_and_link_targets(store):
     assert clean.answer != f"Проверить [{A}](/viewer#gid={A}), [](/viewer#gid=) и [](/viewer#gid=)."
 
 
+def test_gid_guard_preserves_payer_count_and_hop_range(graph):
+    gid = "100000000331309100"
+    graph["nodes"].append({**graph["nodes"][0], "id": gid, "card": f"Узел {gid}"})
+    store = GraphStore(graph)
+    session = GraphTools(store)
+    session.call_tool("get_node", {"gid": gid})
+    text = f"Узел {gid} получил от 1 плательщика, похожие узлы 1-3 колена"
+    draft = assistant.AssistantAnswer(answer=text, gids=[gid], confidence=.9)
+
+    clean, removed = assistant.enforce_gids(draft, store, session.observed_gids)
+
+    assert "удалён" not in clean.answer
+    assert "от 1 плательщика" in clean.answer
+    assert "1-3" in clean.answer
+    assert clean.answer == text
+    assert clean.gids == [gid]
+    assert removed == []
+
+
 def test_gid_guard_catches_hallucinations_absent_from_declared_list(store):
     draft = assistant.AssistantAnswer(answer=f"Гипотеза: перевод от {B} к {UNKNOWN}.", gids=[], confidence=.8)
     clean, removed = assistant.enforce_gids(draft, store, set())
