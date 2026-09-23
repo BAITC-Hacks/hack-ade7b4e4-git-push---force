@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Граф денег · AML-анализ</title>
+<style>@@STYLE@@</style>
+</head>
+<body>
+<header><div><div class="eyebrow">FREEDOM · АНАЛИТИКА СЕТИ</div><h1>Граф денег</h1></div><div id="summary" class="summary"></div><span class="offline">● Автономный режим</span></header>
+<div class="notice">Роли и приоритеты — гипотезы для проверки. Суммы отражают только переводы в выборке; колено 4 ограничено глубиной выгрузки.</div>
+<main>
+<aside class="left">
+<section><h2>Найти клиента</h2><form id="search-form"><label for="search">GID целиком или начало</label><div class="search-row"><input id="search" autocomplete="off" inputmode="numeric" placeholder="Введите gid"><button type="submit">Найти</button></div></form><p id="status" role="status" aria-live="polite"></p><div id="search-results"></div></section>
+<section><h2>Вид сети</h2><label for="color-mode">Раскраска</label><select id="color-mode"><option value="role">По роли</option><option value="cluster">По кластеру</option></select><label for="cluster">Кластер</label><select id="cluster"><option value="">Все кластеры</option></select><label class="checkbox"><input type="checkbox" id="hide-peripheral"> Скрыть периферию</label><button id="reset" class="secondary">Показать всю сеть</button><div id="cluster-info" class="muted"></div></section>
+<section><h2>Роли и правила</h2><div id="legend"></div><p class="muted">Размер узла — приоритет. Толщина стрелки — логарифм суммы переводов. Обводка — исходный узел (seed).</p></section>
+<section><h2>Топ-20 <span class="muted">/ приоритет проверки</span></h2><div id="top"></div></section>
+</aside>
+<section class="map-area" aria-label="Схема переводов"><div class="map-title"><strong>Сеть переводов</strong><span id="visible-count"></span></div><div id="network" aria-label="Интерактивный направленный граф"></div><div class="map-help">Колесо — масштаб · Перетаскивание — обзор · Клик — карточка клиента<br><span class="incoming">Синий: входящие</span> · <span class="outgoing">Оранжевый: исходящие</span></div></section>
+<aside class="right"><section id="details" aria-live="polite"><div class="eyebrow">КАРТОЧКА КЛИЕНТА</div><h2>Выберите узел</h2><p class="muted">Начните с топа приоритетов или найдите gid. Здесь появятся метрики, объяснения и все контрагенты.</p></section></aside>
+</main>
+<noscript>Для отображения графа включите JavaScript в браузере.</noscript>
+<script>@@VENDOR@@</script>
+<script id="graph-data" type="application/json">@@GRAPH@@</script>
+<script>@@APP@@</script>
+</body>
+</html>
