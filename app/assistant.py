@@ -21,6 +21,8 @@ SYSTEM_PROMPT = """Ты ассистент AML-аналитика. Отвеча�
 подходящие инструменты; при нехватке данных сообщи об этом. Не используй внешние
 данные, ФИО, возраст, доход и выдуманные атрибуты. Каждый gid в тексте и списке gids
 должен быть строкой и присутствовать в результате инструмента этого запроса.
+У узлов есть готовое поле card: его можно цитировать из результата get_node или
+другого инструмента, вернувшего этот узел. Сохраняй смысл и ограничения карточки.
 Приводи суммы в KZT, числа и обоснования из инструментов. Пиши gid обычным текстом:
 интерфейс добавит ссылки на /viewer#gid=<gid>. Не создавай другие ссылки или HTML.
 Любые выводы о ролях и рисках — гипотезы для проверки человеком, не обвинения,
@@ -34,18 +36,6 @@ SYSTEM_PROMPT = """Ты ассистент AML-аналитика. Отвеча�
 """
 LIMITATION = ("Выборка ограничена четырьмя коленами, переводами от 5 000 KZT "
               "и одним банком; полные входящие потоки и баланс счёта неизвестны.")
-FLAG_TEXT = {
-    "cutoff_depth4": "Обрыв на 4-м колене: отсутствие исходящих не доказывает накопление денег.",
-    "fast_transit": "Есть признаки быстрого транзита: проверить даты входящих и исходящих переводов.",
-    "sync_inflow": "Есть признаки синхронных поступлений: проверить общие источники и даты.",
-    "cycle": "Есть признаки возвратного потока: проверить цепочку и назначение переводов.",
-    "isolated_seed": "У исходного узла нет связей в выборке: запросить дополнительные операции.",
-}
-ROLE_LABELS = {
-    "consolidator": "Точка консолидации", "transit": "Транзитный узел",
-    "distributor": "Распределитель", "terminal": "Конечный получатель",
-    "coordinator": "Координирующий узел", "peripheral": "Периферия",
-}
 
 
 def viewer_url(gid: str) -> str:
@@ -94,64 +84,21 @@ def _money(value: float) -> str:
     return f"{value:,.2f}".replace(",", " ") + " KZT"
 
 
-def _role_label(store: GraphStore, key: str) -> str:
-    roles = store.roles.values() if isinstance(store.roles, dict) else store.roles
-    return next((r["label"] for r in roles if r.get("key") == key), ROLE_LABELS.get(key, key))
-
-
-def _card(gid: str, store: GraphStore, session: GraphTools) -> dict:
+def _card(gid: str, session: GraphTools) -> dict:
+    """Return the pipeline's saved card verbatim, without generating new prose."""
     node = session.call_tool("get_node", {"gid": gid})
     if "error" in node:
         raise KeyError(gid)
-    adjacent = session.call_tool("neighbors", {"gid": gid, "direction": "both", "limit": 100})
-    if "error" in adjacent:
-        raise ValueError("Не удалось получить связи узла")
-    role = {"key": node["role"], "label": _role_label(store, node["role"]),
-            "evidence": node.get("evidence", "")}
-    flows = {key: node.get(key, 0) for key in ("in_kzt", "out_kzt", "in_tx", "out_tx")}
-    attention = [FLAG_TEXT[f] for f in node.get("flags", []) if f in FLAG_TEXT]
-    if node.get("depth") == 4 and "cutoff_depth4" not in node.get("flags", []):
-        attention.append(FLAG_TEXT["cutoff_depth4"])
-    if node.get("is_seed"):
-        attention.append("Входящие потоки исходного узла могут быть занижены: запросить поступления вне выборки.")
-        if not node.get("in_deg") and not node.get("out_deg") and "isolated_seed" not in node.get("flags", []):
-            attention.append(FLAG_TEXT["isolated_seed"])
-    if node.get("why"):
-        attention.append("Обоснование приоритета: " + node["why"])
-    if not attention:
-        attention.append("Проверить экономический смысл крупнейших переводов и связи с узлами кластера.")
-    attention.append(LIMITATION)
-    text = (f"Карточка узла {gid}.\nРоль: {role['label']} — гипотеза для проверки. "
-            f"{role['evidence']}\n"
-            f"Входящие в выборке: {_money(flows['in_kzt'])}, {flows['in_tx']} переводов "
-            f"от {node.get('in_deg', 0)} узлов.\n"
-            f"Исходящие: {_money(flows['out_kzt'])}, {flows['out_tx']} переводов "
-            f"к {node.get('out_deg', 0)} узлам.")
-    cited = [gid]
-    for label, field in (("Крупнейшие плательщики", "incoming"), ("Крупнейшие получатели", "outgoing")):
-        edges = sorted(adjacent[field], key=lambda e: (-e["sum_kzt"], e["source"], e["target"]))[:3]
-        if edges:
-            items = []
-            for edge in edges:
-                other = edge["source"] if field == "incoming" else edge["target"]
-                items.append(f"{other} ({_money(edge['sum_kzt'])})")
-                cited.append(other)
-            text += "\n" + label + ": " + "; ".join(items) + "."
-    text += "\nНа что обратить внимание: " + " ".join(attention)
-    checked, removed = enforce_gids(AssistantAnswer(answer=text, gids=cited, confidence=0.9),
-                                    store, session.observed_gids)
-    return {"gid": gid, "role": role, "flows": flows,
-            "connections": {"incoming": adjacent["incoming"], "outgoing": adjacent["outgoing"],
-                            "in_deg": node.get("in_deg", 0), "out_deg": node.get("out_deg", 0),
-                            "truncated": adjacent.get("truncated", False)},
-            "attention": attention, **checked.model_dump(), "viewer_url": viewer_url(gid),
-            "meta": {"mode": "rules", "removed_gid_count": len(removed),
-                     "tools": [c["name"] for c in session.calls]}}
+    if not isinstance(node.get("card"), str):
+        raise LookupError("Готовая карточка узла отсутствует в графе")
+    return {"gid": gid, "card": node["card"],
+            "gids": [gid, *sorted(session.observed_gids - {gid})],
+            "viewer_url": viewer_url(gid)}
 
 
 def get_card(gid: str, store: GraphStore | None = None) -> dict:
     store = store if store is not None else GraphStore.from_file()
-    return _card(gid, store, GraphTools(store))
+    return _card(gid, GraphTools(store))
 
 
 def _question_gids(question: str, store: GraphStore) -> list[str]:
@@ -165,10 +112,14 @@ def _rule_answer(question: str, store: GraphStore, session: GraphTools) -> Assis
         if len(gids) != 1:
             return AssistantAnswer(answer="Укажите один gid: «карточка <gid>».", gids=[], confidence=0)
         try:
-            card = _card(gids[0], store, session)
+            card = _card(gids[0], session)
         except KeyError:
             return AssistantAnswer(answer="Узел не найден в текущем графе. Проверьте gid.", gids=[], confidence=0)
-        return AssistantAnswer(**{k: card[k] for k in ("answer", "gids", "confidence")})
+        except LookupError:
+            return AssistantAnswer(answer="Готовая карточка узла пока отсутствует в графе.",
+                                   gids=[], confidence=0)
+        return AssistantAnswer(answer=f"Карточка узла {card['gid']}.\n{card['card']}",
+                               gids=card["gids"], confidence=0.9)
     if re.search(r"кто\s+(?:собирает|получает)\s+(?:деньги|средства)", question, re.I):
         gids = _question_gids(question, store)
         if not gids:

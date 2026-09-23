@@ -109,7 +109,10 @@ def create_app(graph_path: str | Path | None = None) -> FastAPI:
         store = graph()
         if gid not in store.nodes:
             raise HTTPException(404, "Узел не найден в текущем графе")
-        return assistant.get_card(gid, store)
+        try:
+            return assistant.get_card(gid, store)
+        except LookupError:
+            raise HTTPException(404, "Готовая карточка узла отсутствует в графе") from None
 
     @application.get("/viewer")
     def viewer():

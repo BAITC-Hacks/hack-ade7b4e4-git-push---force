@@ -9,6 +9,7 @@ import copy
 import json
 import math
 import os
+import re
 from collections import defaultdict, deque
 from decimal import Decimal
 from pathlib import Path
@@ -83,7 +84,7 @@ def _validate_node(node: dict) -> None:
     flags = node.get("flags")
     if not isinstance(flags, list) or any(not isinstance(flag, str) for flag in flags):
         raise ValueError("flags узла должны быть списком строк")
-    for field in ("evidence", "why"):
+    for field in ("evidence", "why", "card"):
         if field in node and not isinstance(node[field], str):
             raise ValueError(f"{field} узла должен быть строкой")
     for field in ("role_score", "priority_score"):
@@ -430,6 +431,12 @@ class GraphTools:
         def node(value: Any) -> None:
             if isinstance(value, dict):
                 record(value.get("id"))
+                # The pipeline's saved card is also citable graph evidence.
+                # Only exact IDs that exist in this snapshot are admitted.
+                card = value.get("card")
+                if isinstance(card, str):
+                    for gid in re.findall(r"[\w-]+", card):
+                        record(gid)
 
         def edge(value: Any) -> None:
             if isinstance(value, dict):

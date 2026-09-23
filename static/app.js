@@ -4,13 +4,6 @@
   const $ = (id) => document.getElementById(id);
   const state = { asking: false, cardRequest: 0, selectedGid: null, top: [], overviewRequest: 0 };
   const integer = new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 });
-  const money = new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 });
-  const roleLabels = {
-    consolidator: "Точка консолидации", transit: "Транзитный узел", transit_hub: "Транзитный узел",
-    distributor: "Распределитель", source: "Источник", sink: "Конечный получатель",
-    terminal: "Конечный получатель", coordinator: "Координирующий узел",
-    bridge: "Мост между кластерами", peripheral: "Периферийный узел", unknown: "Роль не определена"
-  };
 
   function element(tag, className, text) {
     const node = document.createElement(tag);
@@ -269,61 +262,15 @@
     }
   }
 
-  function flowMetric(label, value, detail) {
-    const metric = element("div");
-    metric.append(element("div", "flow-label", label), element("div", "flow-value", value), element("div", "flow-detail", detail));
-    return metric;
-  }
-
   function renderCard(card, requestedGid) {
     const target = $("node-card");
     target.replaceChildren();
     const gid = stringGid(card.gid) || requestedGid;
-    const role = card.role && typeof card.role === "object" ? card.role : { key: card.role };
-    const label = role.label || roleLabels[role.key] || role.key || "Роль не определена";
-    target.append(element("h3", "card-gid", gid), element("div", "role-badge", label));
-    if (role.evidence) target.append(element("p", "card-evidence", role.evidence));
-    const flows = card.flows || {};
-    const connections = card.connections || {};
-    const flowGrid = element("div", "flow-grid");
-    flowGrid.append(
-      flowMetric("↓ Входящие, ₸", numberText(flows.in_kzt, money), `${numberText(flows.in_tx)} переводов`),
-      flowMetric("↑ Исходящие, ₸", numberText(flows.out_kzt, money), `${numberText(flows.out_tx)} переводов`),
-      flowMetric("Отправители", numberText(connections.in_deg), "входящие связи"),
-      flowMetric("Получатели", numberText(connections.out_deg), "исходящие связи")
-    );
-    target.append(flowGrid);
-    const attention = Array.isArray(card.attention) ? card.attention.filter((item) => typeof item === "string") : [];
-    const attentionSection = element("section", "card-section");
-    attentionSection.append(element("h3", "", "На что обратить внимание"));
-    if (attention.length) {
-      const list = element("ul", "attention-list");
-      attention.forEach((item) => list.append(element("li", "", item)));
-      attentionSection.append(list);
-    } else attentionSection.append(element("p", "small muted", "Дополнительные признаки в данных не указаны."));
-    target.append(attentionSection);
-    const incoming = Array.isArray(connections.incoming) ? connections.incoming : [];
-    const outgoing = Array.isArray(connections.outgoing) ? connections.outgoing : [];
-    const edges = [
-      ...incoming.map((edge) => ({ edge, direction: "in", neighbor: stringGid(edge.source) })),
-      ...outgoing.map((edge) => ({ edge, direction: "out", neighbor: stringGid(edge.target) }))
-    ].filter((entry) => entry.neighbor).sort((a, b) => (b.edge.sum_kzt || 0) - (a.edge.sum_kzt || 0));
-    if (edges.length) {
-      const section = element("section", "card-section");
-      section.append(element("h3", "", "Крупнейшие связи"));
-      const list = element("div", "connection-list");
-      edges.slice(0, 6).forEach(({ edge, direction, neighbor }) => {
-        const row = element("div", "connection-row");
-        const marker = element("span", "connection-direction", direction === "in" ? "↓" : "↑");
-        marker.title = direction === "in" ? "Входящий перевод" : "Исходящий перевод";
-        row.append(marker, viewerLink(neighbor), element("span", "connection-amount", `${numberText(edge.sum_kzt, money)} ₸`));
-        list.append(row);
-      });
-      section.append(list);
-      if (edges.length > 6) section.append(element("p", "small muted", "Все связи доступны на схеме графа."));
-      target.append(section);
-    }
-    target.append(viewerLink(gid, "Открыть узел на схеме ↗", "viewer-link"));
+    target.append(element("h3", "card-gid", gid));
+    const body = element("div", "stored-card");
+    // Saved card text is displayed verbatim; only known graph IDs become links.
+    appendLinkedText(body, typeof card.card === "string" ? card.card : "Карточка пока недоступна.", uniqueGids(card.gids));
+    target.append(body, viewerLink(gid, "Открыть узел на схеме ↗", "viewer-link"));
   }
 
   async function openCard(gid, scroll = false) {

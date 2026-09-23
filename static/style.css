@@ -648,6 +648,18 @@ textarea:focus-visible {
   border-radius:5px;
   margin-top:9px
 }
+.stored-card {
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  font-size:13px;
+  line-height:1.75;
+  color:var(--ink)
+}
+.stored-card a {
+  color:var(--green);
+  text-decoration:underline;
+  text-underline-offset:3px
+}
 .card-evidence {
   font-size:11px;
   line-height:1.8;

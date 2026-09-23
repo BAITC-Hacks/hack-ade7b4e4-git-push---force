@@ -62,6 +62,12 @@ def graph():
             "evidence": "Входящих связей: %s; исходящих: %s" % (len(incoming), len(outgoing)),
             "why": "Два источника, входящий поток 300 KZT" if gid == RECEIVER else "",
             "flags": flags, "x": float(index), "y": 0.0,
+            "card": (
+                f"Узел {gid}\nРоль «{role}» — гипотеза для проверки.\n"
+                f"Потоки: входящие {in_kzt:.2f} KZT; исходящие {out_kzt:.2f} KZT.\n"
+                f"Связи: входящих {len(incoming)}, исходящих {len(outgoing)}.\n"
+                "На что обратить внимание: проверить экономический смысл переводов.\n"
+            ),
         })
     return {
         "meta": {"generated_at": "2026-09-23T14:00:00", "n_nodes": 6, "n_edges": 6,
@@ -252,25 +258,45 @@ def test_no_key_rule_rejects_unknown_source_instead_of_partial_intersection(stor
     assert UNKNOWN not in answer.gids and UNKNOWN not in answer.answer
 
 
-def test_card_explains_isolated_seed_and_depth_cutoff(store):
-    isolated = assistant.get_card(ISOLATED, store)["attention"]
-    boundary = assistant.get_card(BOUNDARY, store)["attention"]
-    assert any("изолир" in text.lower() or "нет связ" in text.lower() for text in isolated)
-    assert any("4" in text and any(word in text.lower() for word in ("границ", "глубин", "непол", "обрез", "обрыв"))
-               for text in boundary)
-
-
-def test_card_contains_role_flow_connections_and_viewer_link(store):
+def test_card_returns_saved_text_unchanged_with_viewer_link(store):
     card = assistant.get_card(RECEIVER, store)
     assert card["gid"] == RECEIVER
-    assert card["role"]["key"] == "consolidator"
-    assert card["role"]["label"] == "Точка консолидации"
-    assert card["role"]["evidence"]
-    assert card["flows"] == {"in_kzt": 300.0, "out_kzt": 250.0, "in_tx": 6, "out_tx": 5}
-    assert {edge["source"] for edge in card["connections"]["incoming"]} == {A, B}
-    assert [edge["target"] for edge in card["connections"]["outgoing"]] == [BOUNDARY]
-    assert isinstance(card["attention"], list) and card["attention"]
+    assert card["card"] == store.get_node(RECEIVER)["card"]
+    assert card["gids"] == [RECEIVER]
     assert card["viewer_url"] == f"/viewer#gid={RECEIVER}"
+
+
+@pytest.mark.parametrize("api_key", ["", "sk-offline-test"])
+def test_saved_card_api_and_question_bypass_llm(graph_path, graph, monkeypatch, api_key):
+    monkeypatch.setattr(config, "DEMO_MODE", "auto")
+    monkeypatch.setattr(config, "OPENAI_API_KEY", api_key)
+    monkeypatch.setattr(llm, "run_structured", lambda *args, **kwargs: pytest.fail("Saved card called the LLM"))
+    expected = next(node["card"] for node in graph["nodes"] if node["id"] == RECEIVER)
+    with TestClient(create_app(graph_path=graph_path)) as client:
+        card_response = client.get(f"/api/card/{RECEIVER}")
+        assert card_response.status_code == 200
+        assert card_response.json()["card"] == expected
+        answer_response = client.post("/api/ask", json={"question": f"Карточка {RECEIVER}"})
+        assert answer_response.status_code == 200
+        answer = answer_response.json()
+        assert expected in answer["answer"]
+        assert answer["gids"] == [RECEIVER]
+        assert answer["meta"]["mode"] == "rules"
+
+
+def test_missing_saved_card_is_404_instead_of_regenerating(graph, tmp_path, monkeypatch):
+    del graph["nodes"][0]["card"]
+    path = tmp_path / "missing-card.json"
+    path.write_text(json.dumps(graph, ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setattr(llm, "run_structured", lambda *args, **kwargs: pytest.fail("Missing card called the LLM"))
+    with TestClient(create_app(graph_path=path)) as client:
+        assert client.get(f"/api/node/{A}").status_code == 200
+        assert client.get(f"/api/card/{A}").status_code == 404
+        response = client.post("/api/ask", json={"question": f"Карточка {A}"})
+        assert response.status_code == 200
+        message = response.json()["answer"].lower()
+        assert "карточк" in message
+        assert any(word in message for word in ("нет", "недоступ", "отсутств"))
 
 
 def test_api_contract_and_string_ids(graph_path):
@@ -380,6 +406,26 @@ def test_live_gateway_preserves_gid_and_removes_unsupported_model_references(sto
     assert seen[1]["input"][0]["type"] == "function_call_output"
     assert meta["mode"] == "live"
     assert meta["tools_called"][0]["name"] == "get_node"
+
+
+def test_live_gateway_can_cite_card_references_but_rejects_other_gids(graph, fake_live):
+    graph["nodes"][0]["card"] += f"Связанный узел: {B}; проверить назначение переводов.\n"
+    store = GraphStore(graph)
+    seen = fake_live([
+        _response("card_tools", [_tool_call(A)]),
+        _response("card_answer", [_message(
+            f"По карточке узла {A}: связанный узел {B}. Проверить также {ISOLATED} и {UNKNOWN}.",
+            [A, B, ISOLATED, UNKNOWN],
+        )]),
+    ])
+    answer, meta = assistant.ask(f"Разбери данные узла {A}", store=store)
+    assert answer.gids == [A, B]
+    assert A in answer.answer and B in answer.answer
+    assert ISOLATED not in answer.answer and UNKNOWN not in answer.answer
+    assert set(meta["guardrails"]) == {ISOLATED, UNKNOWN}
+    returned_node = json.loads(seen[1]["input"][0]["output"])
+    assert returned_node["card"] == graph["nodes"][0]["card"]
+    assert assistant.get_card(A, store)["gids"] == [A, B]
 
 
 def test_http_answer_does_not_republish_removed_gids_in_metadata(graph_path, fake_live):
