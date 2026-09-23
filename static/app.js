@@ -2,7 +2,7 @@
 
 (() => {
   const $ = (id) => document.getElementById(id);
-  const state = { asking: false, cardRequest: 0, selectedGid: null, top: [], overviewRequest: 0 };
+  const state = { asking: false, cardRequest: 0, selectedGid: null, top: [], demoPayers: [], demoLoading: true, overviewRequest: 0 };
   const integer = new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 });
 
   function element(tag, className, text) {
@@ -88,15 +88,43 @@
     if (!target) return;
     target.replaceChildren();
     const gids = state.top.map(gidOf).filter(Boolean);
-    if (gids.length) target.append(suggestion("Показать карточку первого узла", `карточка ${gids[0]}`));
-    if (gids.length > 1) target.append(suggestion("Найти общих получателей двух узлов", `кто собирает деньги с ${gids[0]}, ${gids[1]}`));
-    if (!gids.length) target.append(element("p", "small muted", "Введите gid узла, когда граф будет доступен."));
+    target.append(suggestion("Кто в топе приоритетов?", "Кто в топе приоритетов?"));
+    if (gids.length) {
+      target.append(suggestion("Карточка №1", `Карточка ${gids[0]}`));
+      target.append(suggestion("Черновик по №1", `Черновик по ${gids[0]}`));
+    }
+    if (state.demoPayers.length === 3) {
+      const question = `Кто собирает деньги с ${state.demoPayers.join(", ")}?`;
+      const button = suggestion("Кто собирает деньги с ...", question);
+      button.title = question;
+      button.setAttribute("aria-label", question);
+      target.append(button);
+    }
+    if (state.demoLoading) target.append(element("p", "suggestions-note muted", "Подбираем примеры из графа…"));
+    else if (!gids.length) target.append(element("p", "suggestions-note muted", "Примеры по узлам появятся, когда список приоритетов будет доступен."));
+    else if (!state.demoPayers.length) target.append(element("p", "suggestions-note muted", "Для примера с общим получателем нужны три плательщика одного узла из топа."));
+  }
+
+  async function loadDemoPayers(request) {
+    const results = await Promise.allSettled(state.top.map(async (node) => {
+      const gid = gidOf(node);
+      const result = await api(`/api/node/${encodeURIComponent(gid)}?direction=in`);
+      const incoming = Array.isArray(result.incoming) ? result.incoming : [];
+      // Use distinct incoming sources, never arbitrary high-priority nodes or numeric IDs.
+      return uniqueGids(incoming.filter((edge) => edge && edge.target === gid && edge.source !== gid)
+        .map((edge) => edge.source)).slice(0, 3);
+    }));
+    if (request !== state.overviewRequest) return;
+    const match = results.find((result) => result.status === "fulfilled" && result.value.length === 3);
+    state.demoPayers = match ? match.value : [];
+    state.demoLoading = false;
+    renderSuggestions();
   }
 
   function renderTop() {
     const target = $("top-nodes");
     target.replaceChildren();
-    state.top.forEach((node, index) => {
+    state.top.slice(0, 5).forEach((node, index) => {
       const gid = gidOf(node);
       if (!gid) return;
       const button = element("button", `top-node${state.selectedGid === gid ? " selected" : ""}`);
@@ -116,6 +144,10 @@
 
   async function loadOverview() {
     const request = ++state.overviewRequest;
+    state.top = [];
+    state.demoPayers = [];
+    state.demoLoading = true;
+    renderSuggestions();
     $("refresh-button").disabled = true;
     graphStatus("Проверяем граф…");
     try {
@@ -128,20 +160,25 @@
         graphStatus("Граф пока не готов", "error");
         notice("Граф переводов пока недоступен. Дождитесь подготовки данных и нажмите «Обновить данные».");
         state.top = [];
+        state.demoLoading = false;
         renderTop();
         renderSuggestions();
         return;
       }
       graphStatus("Граф доступен", "ready");
-      notice(health.llm_enabled ? "" : "Работает режим правил: доступны карточки узлов и поиск общих получателей. Для остальных вопросов нужен LLM.");
+      notice(health.llm_enabled ? "" : "Работает режим правил: доступны список приоритетов, карточки узлов, черновики записок и поиск общих получателей.");
       try {
         const result = await api("/api/top");
         if (request !== state.overviewRequest) return;
-        state.top = (Array.isArray(result.nodes) ? result.nodes : []).filter(gidOf).slice(0, 5);
+        state.top = (Array.isArray(result.nodes) ? result.nodes : []).filter(gidOf).slice(0, 10);
         renderTop();
         renderSuggestions();
+        await loadDemoPayers(request);
       } catch (error) {
+        if (request !== state.overviewRequest) return;
         state.top = [];
+        state.demoPayers = [];
+        state.demoLoading = false;
         $("top-nodes").replaceChildren(element("p", "small muted", "Не удалось загрузить список узлов. Поиск по gid доступен."));
         renderSuggestions();
       }
@@ -153,6 +190,8 @@
       $("llm-status").textContent = "Нет связи";
       notice(error.message, true);
       state.top = [];
+      state.demoPayers = [];
+      state.demoLoading = false;
       renderTop();
       renderSuggestions();
     } finally {

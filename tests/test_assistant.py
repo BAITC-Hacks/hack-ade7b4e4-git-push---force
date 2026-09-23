@@ -22,6 +22,7 @@ PARTIAL = "100000009876543210"
 BOUNDARY = "100000002222222222"
 ISOLATED = "100000003333333333"
 UNKNOWN = "100000009999999999"
+DRAFT_HEADER = "ЧЕРНОВИК. Гипотеза для проверки, не вывод о виновности"
 
 
 @pytest.fixture
@@ -266,6 +267,94 @@ def test_card_returns_saved_text_unchanged_with_viewer_link(store):
     assert card["viewer_url"] == f"/viewer#gid={RECEIVER}"
 
 
+@pytest.mark.parametrize("demo_mode", ["on", "auto", "off"])
+def test_draft_without_key_retains_card_numbers_and_node_context(store, monkeypatch, demo_mode):
+    monkeypatch.setattr(config, "DEMO_MODE", demo_mode)
+    monkeypatch.setattr(config, "OPENAI_API_KEY", "")
+    monkeypatch.setattr(llm, "run_structured", lambda *args, **kwargs: pytest.fail("No-key draft called the LLM"))
+    node = store.get_node(RECEIVER)
+    answer, meta = assistant.get_draft(RECEIVER, store=store)
+    assert answer.answer.splitlines()[0] == DRAFT_HEADER
+    assert RECEIVER in answer.answer and RECEIVER in answer.gids
+    assert node["card"] in answer.answer
+    assert "300.00" in answer.answer and "250.00" in answer.answer
+    assert str(node["cluster_id"]) in answer.answer
+    assert str(node["priority_score"]) in answer.answer
+    assert node["role"] in answer.answer or "консолидац" in answer.answer.lower()
+    assert "комплаенс" in answer.answer.lower()
+    assert "запрос" in answer.answer.lower() and "выборк" in answer.answer.lower()
+    assert {"get_node", "neighbors"} <= {call["name"] for call in meta["tools_called"]}
+
+
+def test_draft_chat_command_matches_direct_draft_without_llm(store, monkeypatch):
+    monkeypatch.setattr(llm, "run_structured", lambda *args, **kwargs: pytest.fail("No-key draft called the LLM"))
+    direct, _ = assistant.get_draft(RECEIVER, store=store)
+    chat, meta = assistant.ask(f"Черновик по {RECEIVER}", store=store)
+    assert chat.answer == direct.answer
+    assert chat.gids == direct.gids
+    assert "get_node" in meta["tools"]
+
+
+@pytest.mark.parametrize("question", ["Черновик по", f"Черновик по {A}, {B}", f"Черновик по {UNKNOWN}"])
+def test_draft_chat_rejects_missing_ambiguous_or_unknown_gid(store, monkeypatch, question):
+    monkeypatch.setattr(llm, "run_structured", lambda *args, **kwargs: pytest.fail("Invalid draft called the LLM"))
+    answer, _ = assistant.ask(question, store=store)
+    assert answer.gids == []
+    assert UNKNOWN not in answer.answer
+    assert not answer.answer.startswith(DRAFT_HEADER)
+
+
+def test_draft_api_matches_chat_and_preserves_string_gids(graph_path, graph, monkeypatch):
+    monkeypatch.setattr(llm, "run_structured", lambda *args, **kwargs: pytest.fail("No-key draft called the LLM"))
+    card = next(node["card"] for node in graph["nodes"] if node["id"] == RECEIVER)
+    with TestClient(create_app(graph_path=graph_path)) as client:
+        response = client.get(f"/api/draft/{RECEIVER}")
+        assert response.status_code == 200
+        draft = response.json()
+        chat = client.post("/api/ask", json={"question": f"Черновик по {RECEIVER}"})
+        assert chat.status_code == 200
+        assert draft["answer"] == draft["draft"] == chat.json()["answer"]
+        assert draft["draft"].splitlines()[0] == DRAFT_HEADER
+        assert card in draft["draft"]
+        assert draft["gid"] == RECEIVER and RECEIVER in draft["gids"]
+        assert all(isinstance(gid, str) for gid in draft["gids"])
+        assert draft["viewer_url"] == f"/viewer#gid={RECEIVER}"
+        assert isinstance(draft["tools"], list) and isinstance(draft["meta"], dict)
+        assert client.get(f"/api/draft/{UNKNOWN}").status_code == 404
+
+
+def test_draft_missing_card_is_404_and_chat_does_not_invent_it(graph, tmp_path, monkeypatch):
+    del graph["nodes"][0]["card"]
+    path = tmp_path / "missing-draft-card.json"
+    path.write_text(json.dumps(graph, ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setattr(llm, "run_structured", lambda *args, **kwargs: pytest.fail("Missing draft card called the LLM"))
+    with TestClient(create_app(graph_path=path)) as client:
+        assert client.get(f"/api/node/{A}").status_code == 200
+        assert client.get(f"/api/draft/{A}").status_code == 404
+        response = client.post("/api/ask", json={"question": f"Черновик по {A}"})
+        assert response.status_code == 200
+        assert response.json()["gids"] == []
+        assert not response.json()["answer"].startswith(DRAFT_HEADER)
+
+
+def test_priority_demo_question_works_without_llm(store, monkeypatch):
+    monkeypatch.setattr(llm, "run_structured", lambda *args, **kwargs: pytest.fail("Priority demo called the LLM"))
+    answer, meta = assistant.ask("Кто в топе приоритетов?", store=store)
+    assert RECEIVER in answer.answer and RECEIVER in answer.gids
+    assert "0.95" in answer.answer
+    assert "top_nodes" in meta["tools"]
+
+
+def test_node_api_incoming_direction_finds_payers_for_demo(graph_path):
+    with TestClient(create_app(graph_path=graph_path)) as client:
+        response = client.get(f"/api/node/{RECEIVER}", params={"direction": "in", "limit": 3})
+        assert response.status_code == 200
+        neighbors = response.json()
+        assert {edge["source"] for edge in neighbors["incoming"]} == {A, B}
+        assert neighbors["outgoing"] == []
+        assert client.get(f"/api/node/{RECEIVER}", params={"direction": "invalid"}).status_code == 422
+
+
 @pytest.mark.parametrize("api_key", ["", "sk-offline-test"])
 def test_saved_card_api_and_question_bypass_llm(graph_path, graph, monkeypatch, api_key):
     monkeypatch.setattr(config, "DEMO_MODE", "auto")
@@ -332,6 +421,7 @@ def test_api_graph_not_ready_is_503_and_chat_is_available(tmp_path):
         assert client.post("/api/ask", json={"question": "Карточка узла"}).status_code == 503
         assert client.get(f"/api/node/{A}").status_code == 503
         assert client.get(f"/api/card/{A}").status_code == 503
+        assert client.get(f"/api/draft/{A}").status_code == 503
 
 
 @pytest.mark.parametrize("content", ["{invalid-json", '{"nodes": "invalid", "edges": []}'])
@@ -344,6 +434,7 @@ def test_api_malformed_graph_is_503_without_breaking_chat(tmp_path, content):
         assert client.post("/api/ask", json={"question": "Покажи узлы"}).status_code == 503
         assert client.get(f"/api/node/{A}").status_code == 503
         assert client.get(f"/api/card/{A}").status_code == 503
+        assert client.get(f"/api/draft/{A}").status_code == 503
 
 
 def _response(response_id, output):
@@ -391,6 +482,90 @@ def fake_live(monkeypatch):
         return requests
 
     return install
+
+
+def _draft_tool_calls(gid):
+    return [
+        _tool_call(gid),
+        {"type": "function_call", "id": "fc_neighbors", "call_id": "call_neighbors", "name": "neighbors",
+         "arguments": json.dumps({"gid": gid, "direction": "both", "limit": 100}), "status": "completed"},
+    ]
+
+
+def _offline_draft_text(store, monkeypatch):
+    with monkeypatch.context() as offline:
+        offline.setattr(config, "OPENAI_API_KEY", "")
+        answer, _ = assistant.get_draft(RECEIVER, store=store)
+    return answer.answer
+
+
+def test_live_draft_uses_gateway_tools_and_accepts_grounded_model_text(store, fake_live, monkeypatch):
+    template = _offline_draft_text(store, monkeypatch)
+    extra = "Рекомендация руководителю: запросить документы об экономическом смысле переводов."
+    seen = fake_live([
+        _response("draft_tools", _draft_tool_calls(RECEIVER)),
+        _response("draft_answer", [_message(f"{template}\n{extra}", [RECEIVER, A, B, BOUNDARY])]),
+    ])
+    answer, meta = assistant.get_draft(RECEIVER, store=store)
+    assert answer.answer.splitlines()[0] == DRAFT_HEADER
+    assert extra in answer.answer
+    assert "300.00" in answer.answer and RECEIVER in answer.gids
+    assert meta["mode"] == "live"
+    assert {"get_node", "neighbors"} <= {call["name"] for call in meta["tools_called"]}
+    assert seen[1]["previous_response_id"] == "draft_tools"
+    outputs = [json.loads(item["output"]) for item in seen[1]["input"]]
+    assert outputs[0]["card"] == store.get_node(RECEIVER)["card"]
+    assert outputs[1]["incoming"] and outputs[1]["outgoing"]
+
+
+def test_live_draft_reuses_gid_guard_for_model_references(store, fake_live, monkeypatch):
+    template = _offline_draft_text(store, monkeypatch)
+    fake_live([
+        _response("draft_gid_tools", _draft_tool_calls(RECEIVER)),
+        _response("draft_gid_answer", [_message(
+            f"{template}\nПроверить также {ISOLATED} и {UNKNOWN}.",
+            [RECEIVER, ISOLATED, UNKNOWN],
+        )]),
+    ])
+    answer, meta = assistant.get_draft(RECEIVER, store=store)
+    assert RECEIVER in answer.answer and RECEIVER in answer.gids
+    assert ISOLATED not in answer.answer and UNKNOWN not in answer.answer
+    assert ISOLATED not in answer.gids and UNKNOWN not in answer.gids
+    assert set(meta["guardrails"]) == {ISOLATED, UNKNOWN}
+
+
+@pytest.mark.parametrize("unsupported", ["812345.67 KZT", "812345KZT", "999дней"])
+def test_live_draft_rejects_model_numbers_absent_from_tools(store, fake_live, monkeypatch, unsupported):
+    template = _offline_draft_text(store, monkeypatch)
+    fake_live([
+        _response("draft_number_tools", _draft_tool_calls(RECEIVER)),
+        _response("draft_number_answer", [_message(
+            f"{template}\nНеподтверждённое значение: {unsupported}.", [RECEIVER],
+        )]),
+    ])
+    answer, _ = assistant.get_draft(RECEIVER, store=store)
+    assert answer.answer == template
+    assert unsupported not in answer.answer
+
+
+def test_live_draft_without_model_tool_calls_falls_back_to_card(store, fake_live, monkeypatch):
+    template = _offline_draft_text(store, monkeypatch)
+    fake_live([_response("draft_no_tools", [_message(
+        f"{template}\nТекст модели без вызова инструментов.", [RECEIVER],
+    )])])
+    answer, _ = assistant.get_draft(RECEIVER, store=store)
+    assert answer.answer == template
+
+
+def test_live_draft_gateway_failure_falls_back_to_card(store, fake_live, monkeypatch):
+    template = _offline_draft_text(store, monkeypatch)
+    seen = fake_live([401])
+    answer, meta = assistant.get_draft(RECEIVER, store=store)
+    assert answer.answer == template
+    assert answer.answer.splitlines()[0] == DRAFT_HEADER
+    assert store.get_node(RECEIVER)["card"] in answer.answer
+    assert meta["mode"] == "fallback" and len(seen) == 1
+    assert meta["guardrails"] == []
 
 
 def test_live_gateway_preserves_gid_and_removes_unsupported_model_references(store, fake_live):

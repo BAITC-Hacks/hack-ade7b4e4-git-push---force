@@ -7,6 +7,7 @@ import time
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse
@@ -78,6 +79,11 @@ def create_app(graph_path: str | Path | None = None) -> FastAPI:
     @application.post("/api/ask")
     def ask(body: AskIn, request: Request):
         store = graph()
+        rate_limit(request)
+        answer, info = assistant.ask(body.question, store)
+        return public_answer(answer, info)
+
+    def rate_limit(request: Request) -> None:
         ip = request.client.host if request.client else "local"
         now = time.monotonic()
         with lock:
@@ -90,18 +96,19 @@ def create_app(graph_path: str | Path | None = None) -> FastAPI:
             if len(queue) >= config.RATE_LIMIT_PER_MIN:
                 raise HTTPException(429, "Слишком много запросов. Подождите минуту.")
             queue.append(now)
-        answer, info = assistant.ask(body.question, store)
+
+    def public_answer(answer: assistant.AssistantAnswer, info: dict) -> dict:
         public_meta = {key: info[key] for key in ("mode", "tier", "model", "latency_ms", "cost_usd")
                        if key in info}
         public_meta["removed_gid_count"] = len(info.get("guardrails", []))
         return {**answer.model_dump(), "tools": info.get("tools", []), "meta": public_meta}
 
     @application.get("/api/node/{gid}")
-    def node(gid: str):
+    def node(gid: str, direction: Literal["in", "out", "both"] = "both"):
         store = graph()
         if gid not in store.nodes:
             raise HTTPException(404, "Узел не найден в текущем графе")
-        result = store.neighbors(gid, direction="both", limit=100)
+        result = store.neighbors(gid, direction=direction, limit=100)
         return {**result, "viewer_url": assistant.viewer_url(gid)}
 
     @application.get("/api/card/{gid}")
@@ -113,6 +120,19 @@ def create_app(graph_path: str | Path | None = None) -> FastAPI:
             return assistant.get_card(gid, store)
         except LookupError:
             raise HTTPException(404, "Готовая карточка узла отсутствует в графе") from None
+
+    @application.get("/api/draft/{gid}")
+    def draft(gid: str, request: Request):
+        store = graph()
+        if gid not in store.nodes:
+            raise HTTPException(404, "Узел не найден в текущем графе")
+        rate_limit(request)
+        try:
+            answer, info = assistant.get_draft(gid, store)
+        except LookupError:
+            raise HTTPException(404, "Готовая карточка узла отсутствует в графе") from None
+        return {**public_answer(answer, info), "gid": gid, "draft": answer.answer,
+                "viewer_url": assistant.viewer_url(gid)}
 
     @application.get("/viewer")
     def viewer():
