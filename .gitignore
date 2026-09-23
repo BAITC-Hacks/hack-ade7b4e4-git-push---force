@@ -9,3 +9,6 @@ logs/
 .DS_Store
 Thumbs.db
 _*.bat
+Claude outputs/
+!_run.bat
+!_assistant.bat

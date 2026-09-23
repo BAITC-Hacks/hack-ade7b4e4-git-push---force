@@ -110,7 +110,10 @@ def node_features(G: nx.DiGraph, nodes: pd.DataFrame, tx: pd.DataFrame) -> tuple
     df["max_out_share"] = pd.Series(max_out_share)
 
     df["betweenness"] = pd.Series(nx.betweenness_centrality(G, normalized=True))
-    df["pagerank"] = pd.Series(nx.pagerank(G, weight="sum_kzt", alpha=0.85))
+    try:  # справочная метрика, в правила не входит; в networkx 3.x нужен scipy
+        df["pagerank"] = pd.Series(nx.pagerank(G, weight="sum_kzt", alpha=0.85))
+    except ImportError:
+        df["pagerank"] = np.nan
 
     t = _temporal(tx).reindex(df.index)
     df = df.join(t)
