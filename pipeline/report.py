@@ -96,8 +96,9 @@ def build_report(df: pd.DataFrame, clusters: pd.DataFrame, top: pd.DataFrame, re
         f"{_e(r1['evidence'])}",
         f"{len(multi)} {plural(len(multi), 'группа объединяет', 'группы объединяют', 'групп объединяют')} 2+ известных участника: "
         f"это кандидаты в организованные группы, их гипотезы ниже.",
-        f"Проверка и блокировка топ-20 затрагивает {_pct1(float(r20['turnover_share_touched']))} оборота сети, "
-        f"крупнейшая связная часть сокращается с {_int(base_lcc)} до {_int(int(r20['largest_component']))} клиентов.",
+        f"На переводы с участием топ-20 приходится {_pct1(float(r20['turnover_share_touched']))} оборота сети. "
+        f"Если их заблокировать, крупнейшая связная часть сократится с {_int(base_lcc)} до "
+        f"{_int(int(r20['largest_component']))} клиентов.",
         f"На границе выборки (4-е колено) {_int(cut)} {plural(cut, 'клиент', 'клиента', 'клиентов')}: их не считаем "
         f"конечными получателями, по ним нужен запрос исходящих.",
         f"Список устойчив: если сдвинуть любой порог ролей на шаг, топ-20 сохраняется не меньше чем на {overlap_min}%.",
@@ -175,8 +176,13 @@ h1{margin:0 0 6px;font-size:26px;line-height:1.25}h2{font-size:17px;margin:26px 
 code{background:#f5f7fa;padding:1px 5px;border-radius:4px;font-size:13px}
 .gid{font-family:ui-monospace,Consolas,monospace;font-size:13px;text-decoration:none;white-space:nowrap}
 .warn{background:#fff8e6;border:1px solid #f5d98b;border-radius:8px;padding:8px 12px;font-size:13px;margin-top:18px}
+table.ba{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}table.ba th{text-align:left;background:#f5f7fa;padding:7px 10px}table.ba td{padding:7px 10px;border-bottom:1px solid #eef2f7;vertical-align:top}table.ba td:last-child{color:#0f5132;font-weight:600}
 @media (max-width:640px){.w{margin:0;border-radius:0;padding:22px 16px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:22px}}
 """
+
+
+# Публичная ссылка на AI-ассистента (отдельный проект Vercel, scripts/deploy_ai.py).
+ASSISTANT_URL = "https://graf-deneg-ai.vercel.app"
 
 
 def build_index(meta: dict, n_top: int, out_path: Path, facts: dict | None = None) -> None:
@@ -188,7 +194,7 @@ def build_index(meta: dict, n_top: int, out_path: Path, facts: dict | None = Non
         n = int(f["n_groups"])
         kpis.append((str(n), f"{plural(n, 'группа', 'группы', 'групп')} с 2+ известными участниками"))
     if "share20" in f:
-        kpis.append((f["share20"], "оборота сети затрагивает проверка топ-20"))
+        kpis.append((f["share20"], "оборота сети приходится на переводы с участием топ-20"))
     roles = ", ".join(C.ROLE_LABEL[k].split(",")[0].lower() for k in C.ROLES)
     items = [
         f"<b>Роли по прозрачным правилам.</b> {len(C.ROLES)} ролей: {_e(roles)}. У каждого клиента evidence с цифрами, "
@@ -208,11 +214,28 @@ def build_index(meta: dict, n_top: int, out_path: Path, facts: dict | None = Non
         items.append(f"<b>Граница выборки.</b> На 4-м колене {_int(c)} {plural(c, 'клиент', 'клиента', 'клиентов')} "
                      f"без исходящих в выгрузке. Их не записываем в конечные получатели: по ним нужен запрос исходящих "
                      f"переводов (next_requests.csv).")
-    items += [
-        "<b>AI-ассистент</b> (запускается локально с ключом API): отвечает на вопросы по сети через инструменты графа, "
-        "каждый gid в ответе проверяется кодом, готовит черновик служебной записки.",
+    items.append(
+        f'<b>AI-ассистент онлайн</b> (<a href="{ASSISTANT_URL}">{ASSISTANT_URL.split("//")[1]}</a>): отвечает на вопросы '
+        "по сети через инструменты графа, каждый gid в ответе проверяется кодом, готовит черновик служебной записки.")
+    before_after = [
+        (f"Известен только нижний уровень цепочки ({meta['n_seed']} seed)",
+         f"Роль, кластер и приоритет у всех {_int(meta['n_nodes'])} клиентов сети"),
+        ("Ручная трассировка: часы работы аналитика на один узел (оценка из ТЗ)", "Вся сеть за 10 секунд одной командой"),
+        ("Кого проверять первым, решает интуиция", f"Топ-{n_top} с числовым обоснованием и справка для руководителя"),
+        ("Непонятно, каких данных не хватает", "Готовые запросы данных по каждому пробелу"),
+    ]
+    growth = [
+        "<b>Другие банки и периоды.</b> Любая выгрузка той же схемы обрабатывается одной командой, пороги ролей "
+        "лежат в одном файле.",
+        "<b>Новые сценарии на том же графе.</b> Дропы и мулы в мошенничестве, обналичивание, финансовые пирамиды: "
+        "меняются правила ролей, а граф, кластеры, приоритет, справка и ассистент остаются.",
+        "<b>Встраивание в работу банка.</b> CSV уходят в систему кейсов, справка руководителю, API ассистента "
+        "подключается к внутреннему чату аналитиков.",
         "<b>Масштаб.</b> Синтетический граф той же схемы в 175 тыс. узлов проходит основной расчёт за 71 с. "
-        "Замер и план до 1 млн узлов в README.",
+        "План до 1 млн узлов в README.",
+        "<b>Пилот в банке.</b> На 20 закрытых делах сравнить нашу очередь проверки с сортировкой по числу связей. "
+        "Метрики: время разбора дела и доля направлений на углублённую проверку, которые подтвердились. Это план, "
+        "а не достигнутый результат.",
     ]
     page = f"""<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Граф денег</title><style>{INDEX_CSS}</style></head><body><div class="w">
@@ -221,8 +244,12 @@ def build_index(meta: dict, n_top: int, out_path: Path, facts: dict | None = Non
 <p>Инструмент для AML-аналитика. На входе известные участники ({meta['n_seed']} seed) и сеть их переводов {_e(_period(meta['period']))}.
 На выходе у каждого клиента роль, кластер и приоритет с числовым обоснованием, список на проверку и готовые запросы данных.</p>
 <div class="kpis">{''.join(f'<div class="kpi"><b>{_e(v)}</b><span>{_e(t)}</span></div>' for v, t in kpis)}</div>
-<div class="btns"><a class="btn" href="viewer.html">Схема сети</a><a class="btn alt" href="report.html">Аналитическая справка</a></div>
+<div class="btns"><a class="btn" href="viewer.html">Схема сети</a><a class="btn alt" href="report.html">Аналитическая справка</a>
+<a class="btn alt" href="{ASSISTANT_URL}">AI-ассистент</a></div>
+<h2>Было и стало</h2>
+<table class="ba"><tr><th>Было</th><th>Стало</th></tr>{''.join(f'<tr><td>{_e(a)}</td><td>{_e(b)}</td></tr>' for a, b in before_after)}</table>
 <h2>Что внутри</h2><ul>{''.join(f'<li>{x}</li>' for x in items)}</ul>
+<h2>Развитие после хакатона</h2><ul>{''.join(f'<li>{x}</li>' for x in growth)}</ul>
 <h2>Выгрузки по схеме ТЗ</h2>
 <p><a href="nodes_roles.csv">nodes_roles.csv</a> · <a href="clusters.csv">clusters.csv</a> · <a href="top_nodes.csv">top_nodes.csv</a> ·
 <a href="next_requests.csv">next_requests.csv</a></p>

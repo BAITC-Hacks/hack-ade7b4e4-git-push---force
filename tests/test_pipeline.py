@@ -101,4 +101,6 @@ def test_index(out):
     page = (d / "index.html").read_text(encoding="utf-8")
     top1 = str(pd.read_csv(d / "top_nodes.csv")["gid"].iloc[0])
     assert top1 in page and 'href="viewer.html"' in page and 'href="report.html"' in page
-    assert "http://" not in page and "https://" not in page  # главная работает без интернета
+    from pipeline.report import ASSISTANT_URL
+    page = page.replace(ASSISTANT_URL, "")  # единственная внешняя ссылка: онлайн-ассистент
+    assert "http://" not in page and "https://" not in page  # остальное работает без интернета
