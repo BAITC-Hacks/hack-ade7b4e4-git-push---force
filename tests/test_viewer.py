@@ -57,6 +57,10 @@ def test_build_is_self_contained_and_preserves_data(tmp_path):
     assert "vis-network" in html and "new vis.Network" in html
     assert "connect-src 'none'" in html
     assert "@@GRAPH@@" not in html
+    assert 'id="blocking-panel"' in html
+    assert 'id="blocking-reset"' in html
+    assert all(f'data-block-top="{n}"' in html for n in (5, 10, 20))
+    assert 'href="report.html"' in html
     assert all(isinstance(n["id"], str) for n in expected["nodes"])
     assert expected["nodes"][0]["id"] != expected["nodes"][1]["id"]
     assert int(expected["nodes"][0]["id"]) > 2**53
@@ -142,10 +146,19 @@ def test_browser_offline_interactions(tmp_path, dataset):
 window.addEventListener("load", () => {
   const timings = {open_ms: performance.now()};
   const results = [];
+  const scenarios = {};
   const check = (name, condition) => results.push([name, Boolean(condition)]);
   const $ = id => document.getElementById(id);
   try {
     const g = JSON.parse($("graph-data").textContent);
+    const snapshot = name => {
+      scenarios[name] = Object.fromEntries([...$("blocking-results").querySelectorAll("[data-metric]")].map(row => [row.dataset.metric, Number(row.dataset.after)]));
+    };
+    snapshot("baseline");
+    const stats = [...$("headline-stats").querySelectorAll("strong")].map(n => Number(n.textContent.replace(/\s/g,"")));
+    check("summary", stats[0] === g.meta.n_seed && stats[1] === g.meta.n_nodes && stats[2] === g.top.length);
+    check("role counts", g.roles.every((role,i) => stats[i+3] === (role.count ?? g.nodes.filter(n => n.role === role.key).length)));
+    check("report link", document.querySelector('a[href="report.html"]'));
     check("canvas", $("network").querySelector("canvas"));
     check("deep link", $("details").textContent.includes(g.nodes[0].id));
     const card = $("details").querySelector(".node-card");
@@ -156,9 +169,19 @@ window.addEventListener("load", () => {
     const clusterMetric = [...$("details").querySelectorAll(".metric")].find(m => m.querySelector("dt").textContent === "Кластер");
     const stability = new Intl.NumberFormat("ru-RU", {maximumFractionDigits:2}).format(cluster.stability);
     check("node cluster stability", clusterMetric.textContent.includes(`стабильность: ${stability}`));
+    const blockingStart = performance.now();
+    for(const count of [5,10,20]) {
+      document.querySelector(`[data-block-top="${count}"]`).click(); snapshot(`top${count}`);
+    }
+    timings.blocking_ms = performance.now() - blockingStart;
+    $("blocking-reset").click(); snapshot("reset");
+    $("details").querySelector(".block-node").click(); snapshot("single");
+    check("block button disabled", $("details").querySelector(".block-node").disabled);
     $("cluster").value = String(cluster.cluster_id);
     $("cluster").dispatchEvent(new Event("change"));
     check("filter cluster stability", $("cluster-info").textContent.includes(`стабильность: ${stability}`));
+    snapshot("single_filtered");
+    $("blocking-reset").click();
     $("search").value = g.nodes[0].id.slice(0,1);
     $("search").dispatchEvent(new Event("input"));
     check("prefix", $("search-results").querySelectorAll("a").length > 1);
@@ -189,7 +212,7 @@ window.addEventListener("load", () => {
   } catch(error) { results.push([String(error),false]); }
   const output = document.createElement("pre");
   output.id = "browser-results";
-  output.textContent = JSON.stringify({results, timings});
+  output.textContent = JSON.stringify({results, timings, scenarios});
   document.body.append(output);
 });
 </script>'''
@@ -207,3 +230,54 @@ window.addEventListener("load", () => {
     assert report["timings"]["search_ms"] < 1000, report
     assert len(results) >= 9, results
     assert all(passed for _,passed in results), results
+    ordered = sorted(graph["top"], key=lambda n: n["rank"])
+    for scenario, gids in {
+        "baseline": set(), "reset": set(),
+        "single": {gid}, "single_filtered": {gid},
+        **{f"top{count}": {n["gid"] for n in ordered[:count]} for count in (5, 10, 20)},
+    }.items():
+        expected = reference_blocking(graph, gids)
+        assert report["scenarios"][scenario] == pytest.approx(expected), (scenario, report)
+
+
+def reference_blocking(graph, blocked):
+    """Independent union-find oracle for browser traversal results."""
+    parent = {n["id"]: n["id"] for n in graph["nodes"] if n["id"] not in blocked}
+    def root(gid):
+        while parent[gid] != gid:
+            gid = parent[gid]
+        return gid
+    total = affected = 0
+    for edge in graph["edges"]:
+        total += edge["sum_kzt"]
+        if edge["source"] in blocked or edge["target"] in blocked:
+            affected += edge["sum_kzt"]
+        else:
+            parent[root(edge["source"])] = root(edge["target"])
+    sizes = {}
+    for gid in parent:
+        component = root(gid)
+        sizes[component] = sizes.get(component, 0) + 1
+    return {"largest": max(sizes.values(), default=0), "fragments": len(sizes),
+            "turnover": affected / total * 100 if total else 0}
+
+
+def test_blocking_edge_cases():
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Node.js not installed")
+    # Converging arrows, reciprocal edge, self-loop, isolated vertex, zero turnover.
+    graph = {"nodes": [{"id": gid} for gid in ("a", "b", "c", "isolated")], "edges": [
+        {"source": "a", "target": "b", "sum_kzt": 10},
+        {"source": "c", "target": "b", "sum_kzt": 20},
+        {"source": "b", "target": "a", "sum_kzt": 30},
+        {"source": "a", "target": "a", "sum_kzt": 40},
+    ]}
+    cases = [(graph, []), (graph, ["b"]), (graph, ["a", "b"]),
+             (graph, ["a", "b", "c", "isolated"]), (graph, ["isolated"]),
+             ({"nodes": graph["nodes"], "edges": []}, ["a"]), ({"nodes": [], "edges": []}, [])]
+    script = "const {measureBlocking}=require('./viewer/what_if.js'); const fs=require('fs'); const cases=JSON.parse(fs.readFileSync(0,'utf8')); console.log(JSON.stringify(cases.map(([g,ids])=>measureBlocking(g,new Set(ids)))));"
+    result = subprocess.run([node, "-e", script], input=json.dumps(cases), cwd=ROOT, capture_output=True, text=True, check=True)
+    for actual, (data, ids) in zip(json.loads(result.stdout), cases):
+        expected = reference_blocking(data, set(ids))
+        assert actual == pytest.approx({"largest": expected["largest"], "fragments": expected["fragments"], "affectedPercent": expected["turnover"]})

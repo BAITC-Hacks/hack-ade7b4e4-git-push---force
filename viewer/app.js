@@ -27,6 +27,32 @@
   const roleLabel = key => roles.get(key)?.label || key;
   const baseColor = n => $("color-mode").value === "cluster" ? clusterColors.get(String(n.cluster_id)) : (roles.get(n.role)?.color || "#8899aa");
   let selected = null;
+  let blocked = new Set();
+  const baseline = measureBlocking(graph);
+  const rankedTop = [...graph.top].sort((a,b) => a.rank-b.rank);
+  function renderBlocking() {
+    const after = measureBlocking(graph, blocked);
+    const results = $("blocking-results");
+    results.replaceChildren(el("p", `Заблокировано в сценарии: ${number(blocked.size)}`, "blocked-count"));
+    for (const [key, label, before, value, suffix] of [
+      ["largest", "Крупнейшая часть, узлов", baseline.largest, after.largest, ""],
+      ["fragments", "Число фрагментов", baseline.fragments, after.fragments, ""],
+      ["turnover", "Доля оборота через заблокированные узлы", 0, after.affectedPercent, " %"]
+    ]) {
+      const row = el("div", undefined, "blocking-metric");
+      row.dataset.metric = key; row.dataset.before = before; row.dataset.after = value;
+      row.append(el("span", label), el("strong", `${number(before)}${suffix} → ${number(value)}${suffix}`));
+      results.append(row);
+    }
+    document.querySelectorAll("[data-block-top]").forEach(button => {
+      const ids = new Set(rankedTop.slice(0, Number(button.dataset.blockTop)).map(n => n.gid));
+      button.setAttribute("aria-pressed", String(blocked.size > 0 && ids.size === blocked.size && [...ids].every(id => blocked.has(id))));
+    });
+  }
+  function applyBlocking() {
+    renderBlocking(); refresh();
+    if(selected) showDetails(byId.get(selected));
+  }
   const nodeData = new vis.DataSet(graph.nodes.map(n => ({id:n.id, x:n.x, y:n.y, label:"", shape:"dot", size:8 + 24 * Math.max(0, Math.min(1,n.priority_score)), borderWidth:n.is_seed ? 3 : 1, color:{background:baseColor(n),border:n.is_seed ? "#23394c" : baseColor(n)}})));
   const edgeData = new vis.DataSet(graph.edges.map(e => ({id:e.viewerId, from:e.source, to:e.target, arrows:"to", width:0.6 + Math.log1p(Math.max(0,e.sum_kzt))/5, color:{color:"#bdcbd7",highlight:"#2563eb",inherit:false}, smooth:{enabled:true,type:"curvedCW",roundness:0.12}})));
   const network = new vis.Network($("network"), {nodes:nodeData,edges:edgeData}, {
@@ -49,10 +75,13 @@
     if (selected) [...incoming.get(selected), ...outgoing.get(selected)].forEach(e => {neighbors.add(e.source);neighbors.add(e.target);});
     nodeData.update(graph.nodes.map(n => {
       const faded = selected && !neighbors.has(n.id);
-      const color = faded ? "#e1e7ed" : baseColor(n);
+      const color = blocked.has(n.id) ? "#9ca3af" : faded ? "#e1e7ed" : baseColor(n);
       return {id:n.id,hidden:!visible.has(n.id),label:n.id === selected ? n.id : "",color:{background:color,border:n.id === selected ? "#142d45" : n.is_seed && !faded ? "#23394c" : color,highlight:{background:color,border:"#142d45"}},borderWidth:n.id === selected ? 4 : n.is_seed ? 3 : 1};
     }));
-    edgeData.update(graph.edges.map(e => ({id:e.viewerId,hidden:!visible.has(e.source)||!visible.has(e.target),color:{color:selected ? e.source === selected ? "#d97706" : e.target === selected ? "#2563eb" : "#e7ecf1" : "#bdcbd7",inherit:false,opacity:selected && e.source !== selected && e.target !== selected ? 0.2 : 0.85}})));
+    edgeData.update(graph.edges.map(e => {
+      const excluded = blocked.has(e.source) || blocked.has(e.target);
+      return {id:e.viewerId,hidden:!visible.has(e.source)||!visible.has(e.target),dashes:excluded,color:{color:excluded ? "#9ca3af" : selected ? e.source === selected ? "#d97706" : e.target === selected ? "#2563eb" : "#e7ecf1" : "#bdcbd7",highlight:excluded ? "#9ca3af" : "#2563eb",inherit:false,opacity:excluded ? 0.65 : selected && e.source !== selected && e.target !== selected ? 0.2 : 0.85}};
+    }));
     $("visible-count").textContent = `${number(visible.size)} из ${number(graph.nodes.length)} узлов`;
     const c = clusters.get(cluster);
     $("cluster-info").textContent = c ? `Кластер ${clusterLabel(c.cluster_id)} · ${c.hypothesis} · Узлов: ${number(c.n_nodes)} · Seed: ${number(c.n_seed)} · Внутренние переводы: ${money(c.sum_kzt_internal)}` : "";
@@ -61,6 +90,10 @@
     const panel = $("details"); panel.replaceChildren();
     panel.append(el("div", "КАРТОЧКА КЛИЕНТА", "eyebrow"), el("h2", n.id, "node-id gid"), el("span",roleLabel(n.role),"pill"));
     if(n.is_seed) panel.append(el("span","Исходный узел · seed","pill"));
+    const blockButton = el("button", blocked.has(n.id) ? "Узел заблокирован в сценарии" : "Заблокировать этот узел", "block-node");
+    blockButton.type = "button"; blockButton.disabled = blocked.has(n.id);
+    blockButton.addEventListener("click", () => {blocked.add(n.id); applyBlocking();});
+    panel.append(blockButton);
     if(typeof n.card === "string" && n.card.trim()) {
       panel.append(el("h3","Карточка для проверки"),el("p",n.card,"explanation node-card"));
     }
@@ -118,6 +151,19 @@
     matches.slice(0,50).forEach(n=>$("search-results").append(gidLink(n.id)));
   }
   $("summary").textContent = `${number(graph.meta.n_nodes)} клиентов · ${number(graph.meta.n_edges)} связей · ${money(graph.meta.turnover_kzt)} · ${graph.meta.period}`;
+  for (const [label, value, color] of [
+    ["Известных участников", graph.meta.n_seed], ["Клиентов в сети", graph.meta.n_nodes], ["На проверку", graph.top.length],
+    ...graph.roles.map(role => [role.label, role.count ?? graph.nodes.filter(n => n.role === role.key).length, role.color])
+  ]) {
+    const stat = el("div", undefined, "headline-stat");
+    if(color) stat.style.borderTopColor = color;
+    stat.append(el("strong", number(value)), el("span", label)); $("headline-stats").append(stat);
+  }
+  document.querySelectorAll("[data-block-top]").forEach(button => button.addEventListener("click", () => {
+    blocked = new Set(rankedTop.slice(0, Number(button.dataset.blockTop)).map(n => n.gid)); applyBlocking();
+  }));
+  $("blocking-reset").addEventListener("click", () => {blocked.clear(); applyBlocking();});
+  renderBlocking();
   clusterIds.forEach(id=>{const option=el("option",`Кластер ${clusterLabel(id)}`);option.value=id;$("cluster").append(option);});
   graph.roles.forEach(role=>{
     const row=el("div",undefined,"legend-item"), label=el("div",undefined,"legend-label"), swatch=el("span",undefined,"swatch");

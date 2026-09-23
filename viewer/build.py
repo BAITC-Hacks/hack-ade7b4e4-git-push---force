@@ -42,7 +42,7 @@ def build_viewer(graph_json: Path, out_html: Path) -> None:
         "STYLE": (root / "style.css").read_text(encoding="utf-8"),
         "VENDOR": vendor,
         "GRAPH": data,
-        "APP": (root / "app.js").read_text(encoding="utf-8"),
+        "APP": (root / "what_if.js").read_text(encoding="utf-8") + "\n" + (root / "app.js").read_text(encoding="utf-8"),
     }
     template = (root / "template.html").read_text(encoding="utf-8")
     html = re.sub(r"@@(STYLE|VENDOR|GRAPH|APP)@@", lambda match: parts[match[1]], template)
