@@ -244,7 +244,7 @@ def build_index(meta: dict, n_top: int, out_path: Path, facts: dict | None = Non
 <p>Инструмент для AML-аналитика. На входе известные участники ({meta['n_seed']} seed) и сеть их переводов {_e(_period(meta['period']))}.
 На выходе у каждого клиента роль, кластер и приоритет с числовым обоснованием, список на проверку и готовые запросы данных.</p>
 <div class="kpis">{''.join(f'<div class="kpi"><b>{_e(v)}</b><span>{_e(t)}</span></div>' for v, t in kpis)}</div>
-<div class="btns"><a class="btn" href="viewer.html">Схема сети</a><a class="btn alt" href="report.html">Аналитическая справка</a>
+<div class="btns"><a class="btn alt" href="viewer.html">Схема сети</a><a class="btn alt" href="report.html">Аналитическая справка</a>
 <a class="btn alt" href="{ASSISTANT_URL}">AI-ассистент</a></div>
 <h2>Было и стало</h2>
 <table class="ba"><tr><th>Было</th><th>Стало</th></tr>{''.join(f'<tr><td>{_e(a)}</td><td>{_e(b)}</td></tr>' for a, b in before_after)}</table>
