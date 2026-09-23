@@ -20,6 +20,7 @@ from app.graph_store import GraphStore
 
 class AskIn(BaseModel):
     question: str = Field(min_length=1, max_length=4000)
+    use_llm: bool = True
 
     @field_validator("question")
     @classmethod
@@ -80,7 +81,7 @@ def create_app(graph_path: str | Path | None = None) -> FastAPI:
     def ask(body: AskIn, request: Request):
         store = graph()
         rate_limit(request)
-        answer, info = assistant.ask(body.question, store)
+        answer, info = assistant.ask(body.question, store, use_llm=body.use_llm)
         return public_answer(answer, info)
 
     def rate_limit(request: Request) -> None:
@@ -122,13 +123,13 @@ def create_app(graph_path: str | Path | None = None) -> FastAPI:
             raise HTTPException(404, "Готовая карточка узла отсутствует в графе") from None
 
     @application.get("/api/draft/{gid}")
-    def draft(gid: str, request: Request):
+    def draft(gid: str, request: Request, use_llm: bool = True):
         store = graph()
         if gid not in store.nodes:
             raise HTTPException(404, "Узел не найден в текущем графе")
         rate_limit(request)
         try:
-            answer, info = assistant.get_draft(gid, store)
+            answer, info = assistant.get_draft(gid, store, use_llm=use_llm)
         except LookupError:
             raise HTTPException(404, "Готовая карточка узла отсутствует в графе") from None
         return {**public_answer(answer, info), "gid": gid, "draft": answer.answer,

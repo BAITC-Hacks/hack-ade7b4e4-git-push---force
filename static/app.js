@@ -2,7 +2,8 @@
 
 (() => {
   const $ = (id) => document.getElementById(id);
-  const state = { asking: false, cardRequest: 0, selectedGid: null, top: [], demoPayers: [], demoLoading: true, overviewRequest: 0 };
+  const state = { asking: false, askRequest: 0, activeAsk: null, rulesOnly: false, llmAvailable: false,
+    cardRequest: 0, selectedGid: null, top: [], demoPayers: [], demoLoading: true, overviewRequest: 0 };
   const integer = new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 });
 
   function element(tag, className, text) {
@@ -37,12 +38,16 @@
     return link;
   }
 
-  async function api(path, options = {}) {
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 120000);
+  async function api(path, options = {}, control = {}) {
+    const controller = control.controller || new AbortController();
+    let timedOut = false;
+    const timeout = window.setTimeout(() => { timedOut = true; controller.abort(); }, control.timeoutMs || 120000);
     try {
       const response = await fetch(path, { ...options, signal: controller.signal });
-      const payload = await response.json().catch(() => null);
+      const payload = await response.json().catch((error) => {
+        if (error.name === "AbortError") throw error;
+        return null;
+      });
       if (!response.ok) {
         let detail = payload && payload.detail;
         if (Array.isArray(detail)) detail = detail.map((item) => item.msg || "Некорректные данные").join(". ");
@@ -52,7 +57,11 @@
       if (!payload || typeof payload !== "object") throw new Error("Сервер вернул ответ в неизвестном формате.");
       return payload;
     } catch (error) {
-      if (error.name === "AbortError") throw new Error("Сервер не успел ответить. Попробуйте повторить запрос.");
+      if (error.name === "AbortError") {
+        const failure = new Error(timedOut ? "Сервер не успел ответить. Попробуйте повторить запрос." : "Ожидание ответа остановлено.");
+        failure.code = timedOut ? "request_timeout" : "request_cancelled";
+        throw failure;
+      }
       if (error instanceof TypeError) throw new Error("Нет связи с сервером. Проверьте подключение и повторите запрос.");
       throw error;
     } finally {
@@ -64,6 +73,41 @@
     $("notice").hidden = !message;
     $("notice").textContent = message;
     $("notice").className = error ? "notice error" : "notice";
+  }
+
+  function renderMode(reason = "") {
+    const withoutModel = state.rulesOnly || !state.llmAvailable;
+    $("llm-status").textContent = withoutModel ? "Без модели" : "LLM включён";
+    const button = $("rules-mode-button");
+    button.textContent = state.rulesOnly && state.llmAvailable ? "Включить модель" : "Без модели";
+    button.disabled = !state.llmAvailable;
+    button.setAttribute("aria-pressed", String(withoutModel));
+    button.title = withoutModel ? "Разрешить модель для следующих вопросов" : "Продолжить без ожидания модели";
+    notice(withoutModel ? `${reason ? reason + " " : ""}Работает режим без модели: доступны список приоритетов, карточки узлов, черновики записок и поиск общих получателей.` : "");
+  }
+
+  function switchToRules(reason) {
+    state.rulesOnly = true;
+    renderMode(reason);
+  }
+
+  function toggleModel() {
+    if (!state.llmAvailable) return;
+    if (state.rulesOnly) {
+      state.rulesOnly = false;
+      renderMode();
+      return;
+    }
+    switchToRules("Модель отключена для этого диалога.");
+    const pending = state.activeAsk;
+    if (pending && pending.useLlm) {
+      // Invalidate before aborting: a late response must not overwrite the retry.
+      ++state.askRequest;
+      pending.controller.abort();
+      state.activeAsk = null;
+      state.asking = false;
+      return sendQuestion(pending.question, pending.message);
+    }
   }
 
   function graphStatus(text, kind) {
@@ -155,7 +199,8 @@
       if (request !== state.overviewRequest) return;
       $("node-count").textContent = numberText(health.n_nodes);
       $("edge-count").textContent = numberText(health.n_edges);
-      $("llm-status").textContent = health.llm_enabled ? "LLM включён" : "Режим правил";
+      state.llmAvailable = Boolean(health.llm_enabled);
+      renderMode();
       if (!health.graph_available) {
         graphStatus("Граф пока не готов", "error");
         notice("Граф переводов пока недоступен. Дождитесь подготовки данных и нажмите «Обновить данные».");
@@ -166,7 +211,6 @@
         return;
       }
       graphStatus("Граф доступен", "ready");
-      notice(health.llm_enabled ? "" : "Работает режим правил: доступны список приоритетов, карточки узлов, черновики записок и поиск общих получателей.");
       try {
         const result = await api("/api/top");
         if (request !== state.overviewRequest) return;
@@ -275,17 +319,35 @@
     if (state.asking) return;
     const question = $("question").value.trim();
     if (!question) return;
+    $("question").value = "";
+    return sendQuestion(question);
+  }
+
+  async function sendQuestion(question, previousMessage = null) {
+    const request = ++state.askRequest;
+    const controller = new AbortController();
+    const useLlm = state.llmAvailable && !state.rulesOnly;
     state.asking = true;
     $("send-button").disabled = true;
-    $("question").value = "";
-    addMessage("user", question);
-    const message = addMessage("assistant", "Проверяю данные графа", true);
+    if (!previousMessage) addMessage("user", question);
+    const message = previousMessage || addMessage("assistant", "Проверяю данные графа", true);
+    if (previousMessage) message.body.textContent = "Готовлю ответ без модели";
+    state.activeAsk = { question, message, controller, useLlm };
     try {
       const result = await api("/api/ask", {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question })
-      });
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, use_llm: useLlm })
+      }, { controller, timeoutMs: 20000 });
+      if (request !== state.askRequest) return;
+      if (useLlm && result.meta && ["fallback", "offline", "demo"].includes(result.meta.mode)) {
+        switchToRules("Ответ подготовлен без модели. Следующие вопросы также выполняются без неё.");
+      }
       renderAnswer(message, result);
     } catch (error) {
+      if (request !== state.askRequest) return;
+      if (useLlm && error.code === "request_timeout") {
+        switchToRules("Ответ модели не получен вовремя. Продолжаем без неё.");
+        return sendQuestion(question, message);
+      }
       message.wrapper.classList.add("error");
       message.body.classList.remove("loading-dots");
       message.body.textContent = error.message;
@@ -295,9 +357,12 @@
       message.wrapper.append(retry);
       scrollMessages();
     } finally {
-      state.asking = false;
-      $("send-button").disabled = false;
-      $("question").focus();
+      if (request === state.askRequest) {
+        state.activeAsk = null;
+        state.asking = false;
+        $("send-button").disabled = false;
+        $("question").focus();
+      }
     }
   }
 
@@ -332,6 +397,7 @@
   }
 
   $("ask-form").addEventListener("submit", ask);
+  $("rules-mode-button").addEventListener("click", toggleModel);
   $("question").addEventListener("keydown", (event) => {
     if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
       event.preventDefault();

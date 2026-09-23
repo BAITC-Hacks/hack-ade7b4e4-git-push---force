@@ -483,11 +483,24 @@ textarea:focus-visible {
 }
 .composer-hint {
   display:flex;
+  align-items:center;
   justify-content:space-between;
   gap:8px;
   font-size:8px;
   color:#97a3aa;
   margin-top:9px
+}
+.mode-toggle {
+  flex-shrink:0;
+  padding:4px 7px;
+  border:1px solid #d8e9df;
+  border-radius:5px;
+  background:var(--green-light);
+  color:var(--green);
+  font-size:10px
+}
+.mode-toggle:disabled {
+  cursor:default
 }
 .message {
   margin-bottom:24px;

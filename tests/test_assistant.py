@@ -323,6 +323,35 @@ def test_draft_api_matches_chat_and_preserves_string_gids(graph_path, graph, mon
         assert client.get(f"/api/draft/{UNKNOWN}").status_code == 404
 
 
+def test_demo_rules_switch_bypasses_model_even_with_key(graph_path, graph, monkeypatch):
+    monkeypatch.setattr(config, "DEMO_MODE", "auto")
+    monkeypatch.setattr(config, "OPENAI_API_KEY", "sk-offline-test")
+    monkeypatch.setattr(llm, "run_structured", lambda **kwargs: pytest.fail("Rules switch called the model"))
+    card = next(node["card"] for node in graph["nodes"] if node["id"] == RECEIVER)
+    with TestClient(create_app(graph_path=graph_path)) as client:
+        assert client.get("/api/health").json()["llm_enabled"] is True
+        response = client.post("/api/ask", json={
+            "question": f"Кто собирает деньги с {A}, {B}?", "use_llm": False})
+        assert response.status_code == 200
+        assert RECEIVER in response.json()["gids"]
+        assert response.json()["meta"]["mode"] == "rules"
+        response = client.post("/api/ask", json={
+            "question": f"Объясни, почему {RECEIVER} первый в списке и что запросить по нему дальше",
+            "use_llm": False})
+        assert response.status_code == 200
+        assert response.json()["meta"]["mode"] == "offline"
+        chat = client.post("/api/ask", json={
+            "question": f"Черновик по {RECEIVER}", "use_llm": False})
+        direct = client.get(f"/api/draft/{RECEIVER}", params={"use_llm": "false"})
+        assert chat.status_code == direct.status_code == 200
+        assert chat.json()["answer"] == direct.json()["draft"]
+        assert card in chat.json()["answer"]
+        assert chat.json()["answer"].splitlines()[0] == DRAFT_HEADER
+        assert chat.json()["meta"]["mode"] == direct.json()["meta"]["mode"] == "rules"
+        # Per-request choice must not alter configuration for other users.
+        assert client.get("/api/health").json()["llm_enabled"] is True
+
+
 def test_draft_missing_card_is_404_and_chat_does_not_invent_it(graph, tmp_path, monkeypatch):
     del graph["nodes"][0]["card"]
     path = tmp_path / "missing-draft-card.json"

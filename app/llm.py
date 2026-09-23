@@ -59,7 +59,7 @@ def get_client() -> Any:
         kwargs: dict[str, Any] = {
             "api_key": config.OPENAI_API_KEY or "missing",
             "timeout": config.OPENAI_TIMEOUT,
-            "max_retries": 2,
+            "max_retries": 0,
         }
         if config.OPENAI_BASE_URL:
             kwargs["base_url"] = config.OPENAI_BASE_URL
@@ -173,10 +173,11 @@ def run_structured(
         return schema.model_validate(answer), _finish(meta, t0)
 
     try:
-        parsed, call = _call(route.tier, instructions, masked, schema, tools, tool_provider)
+        deadline = t0 + max(0.0, config.OPENAI_TOTAL_TIMEOUT)
+        parsed, call = _call(route.tier, instructions, masked, schema, tools, tool_provider, deadline=deadline)
         meta["calls"].append(call)
         if route.tier == "fast" and not force_tier and _confidence(parsed) < config.ESCALATE_BELOW:
-            parsed, call2 = _call("smart", instructions, masked, schema, tools, tool_provider)
+            parsed, call2 = _call("smart", instructions, masked, schema, tools, tool_provider, deadline=deadline)
             meta["calls"].append(call2)
             meta["escalated"] = True
             meta["tier"] = "smart"
@@ -210,7 +211,7 @@ def stats() -> dict:
 
 
 def _call(tier: str, instructions: str, text: str, schema: Type[T], tool_names: list[str] | None,
-          tool_provider: Any = None) -> tuple[T, dict]:
+          tool_provider: Any = None, *, deadline: float | None = None) -> tuple[T, dict]:
     model = config.MODEL_SMART if tier == "smart" else config.MODEL_FAST
     effort = config.REASONING_SMART if tier == "smart" else config.REASONING_FAST
     max_out = config.MAX_OUTPUT_TOKENS_SMART if tier == "smart" else config.MAX_OUTPUT_TOKENS_FAST
@@ -230,10 +231,24 @@ def _call(tier: str, instructions: str, text: str, schema: Type[T], tool_names: 
         base["reasoning"] = {"effort": effort}
 
     started = time.perf_counter()
+    if deadline is None:
+        deadline = started + max(0.0, config.OPENAI_TOTAL_TIMEOUT)
     usage = {"input": 0, "cached": 0, "output": 0}
     called: list[dict] = []
 
-    response = client.responses.parse(input=[{"role": "user", "content": text}], **base)
+    def parse_response(**request):
+        remaining = deadline - time.perf_counter()
+        if remaining <= 0:
+            raise TimeoutError("LLM request time budget exhausted")
+        # SDK retries and a fresh timeout per round can otherwise keep the demo
+        # waiting for minutes. Every round spends the same answer's time budget.
+        request_client = client.with_options(timeout=min(config.OPENAI_TIMEOUT, remaining), max_retries=0)
+        response = request_client.responses.parse(**request, **base)
+        if time.perf_counter() >= deadline:
+            raise TimeoutError("LLM request time budget exhausted")
+        return response
+
+    response = parse_response(input=[{"role": "user", "content": text}])
     rounds = 1
     while True:
         _add_usage(usage, response)
@@ -250,7 +265,7 @@ def _call(tier: str, instructions: str, text: str, schema: Type[T], tool_names: 
                 "output": json.dumps(result, ensure_ascii=False),
             })
         extra = {"tool_choice": "none"} if rounds >= config.MAX_TOOL_ROUNDS else {}
-        response = client.responses.parse(input=outputs, previous_response_id=response.id, **base, **extra)
+        response = parse_response(input=outputs, previous_response_id=response.id, **extra)
         rounds += 1
 
     if getattr(response, "status", "completed") == "incomplete":

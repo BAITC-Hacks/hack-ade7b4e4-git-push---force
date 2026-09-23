@@ -194,11 +194,11 @@ def _answer_info(info: dict, session: GraphTools, removed: list[str]) -> dict:
     return info
 
 
-def get_draft(gid: str, store: GraphStore | None = None) -> tuple[AssistantAnswer, dict]:
+def get_draft(gid: str, store: GraphStore | None = None, *, use_llm: bool = True) -> tuple[AssistantAnswer, dict]:
     store = store if store is not None else GraphStore.from_file()
     fallback_session = GraphTools(store)
     template = _draft_template(gid, fallback_session)
-    if not llm_enabled():
+    if not use_llm or not llm_enabled():
         answer, removed = enforce_gids(template, store, fallback_session.observed_gids)
         return answer, _answer_info({"mode": "rules"}, fallback_session, removed)
 
@@ -297,7 +297,7 @@ def llm_enabled() -> bool:
     return bool(config.OPENAI_API_KEY) and llm.mode() == "live"
 
 
-def ask(question: str, store: GraphStore | None = None) -> tuple[AssistantAnswer, dict]:
+def ask(question: str, store: GraphStore | None = None, *, use_llm: bool = True) -> tuple[AssistantAnswer, dict]:
     try:
         store = store if store is not None else GraphStore.from_file()
     except (OSError, ValueError):
@@ -308,7 +308,7 @@ def ask(question: str, store: GraphStore | None = None) -> tuple[AssistantAnswer
         try:
             if len(gids) != 1:
                 raise ValueError("Укажите один gid: «Черновик по <gid>».")
-            return get_draft(gids[0], store)
+            return get_draft(gids[0], store, use_llm=use_llm)
         except KeyError:
             message = "Узел не найден в текущем графе. Проверьте gid."
         except LookupError:
@@ -327,7 +327,7 @@ def ask(question: str, store: GraphStore | None = None) -> tuple[AssistantAnswer
                                    "и «кто собирает деньги с <gid, gid>».",
                                    gids=[], confidence=0)
 
-        if not llm_enabled():
+        if not use_llm or not llm_enabled():
             answer = unavailable(question)
             info = {"mode": "offline"}
         else:
