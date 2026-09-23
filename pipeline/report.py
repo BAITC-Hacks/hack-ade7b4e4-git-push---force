@@ -98,7 +98,8 @@ def build_report(df: pd.DataFrame, clusters: pd.DataFrame, top: pd.DataFrame, re
         f"это кандидаты в организованные группы, их гипотезы ниже.",
         f"Проверка и блокировка топ-20 затрагивает {_pct1(float(r20['turnover_share_touched']))} оборота сети, "
         f"крупнейшая связная часть сокращается с {_int(base_lcc)} до {_int(int(r20['largest_component']))} клиентов.",
-        f"{cut} клиентов на границе выборки (4-е колено) не считаем конечными получателями: по ним нужен запрос исходящих.",
+        f"На границе выборки (4-е колено) {_int(cut)} {plural(cut, 'клиент', 'клиента', 'клиентов')}: их не считаем "
+        f"конечными получателями, по ним нужен запрос исходящих.",
         f"Список устойчив: если сдвинуть любой порог ролей на шаг, топ-20 сохраняется не меньше чем на {overlap_min}%.",
     ]
 
@@ -123,7 +124,7 @@ def build_report(df: pd.DataFrame, clusters: pd.DataFrame, top: pd.DataFrame, re
     page = f"""<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Аналитическая справка: граф денег</title><style>{CSS}</style></head><body><div class="page">
 <h1>Аналитическая справка по сети переводов</h1>
-<div class="sub">Период {_e(_period(meta['period']))} · {n_seed} seed, {meta['n_edges']} связей, {meta['n_tx']} транзакций ·
+<div class="sub">Период {_e(_period(meta['period']))} · {n_seed} seed, {_int(meta['n_edges'])} {plural(meta['n_edges'], 'связь', 'связи', 'связей')}, {_int(meta['n_tx'])} {plural(meta['n_tx'], 'транзакция', 'транзакции', 'транзакций')} ·
 сформировано {datetime.now().strftime('%d.%m.%Y %H:%M')} командой <code>python -m pipeline</code></div>
 <div class="warn">Роли и приоритеты являются <b>гипотезами для проверки</b>, а не выводами о виновности. Данные: только
 исходящие внутрибанковские переводы от 5 000 ₸ на 4 колена, без атрибутов клиентов.</div>
@@ -135,7 +136,7 @@ def build_report(df: pd.DataFrame, clusters: pd.DataFrame, top: pd.DataFrame, re
 <h2>Главное</h2><ul class="key">{''.join(f'<li>{p}</li>' for p in key_points)}</ul>
 <h2>Кого проверять первым</h2>
 <table><tr><th>№</th><th>gid</th><th>Роль</th><th>Приоритет</th><th>Почему</th></tr>{top_rows}</table>
-<p class="muted">Полный список: top_nodes.csv (топ-{len(top)}) и nodes_roles.csv (все {n_nodes} клиентов). Клик по gid открывает клиента на схеме сети.</p>
+<p class="muted">Полный список: top_nodes.csv (топ-{len(top)}) и nodes_roles.csv (все {_int(n_nodes)} клиентов). Клик по gid открывает клиента на схеме сети.</p>
 <h2>Группы с несколькими известными участниками</h2>
 <table><tr><th>Кластер</th><th>Клиентов</th><th>Seed</th><th>Оборот внутри</th><th>Ключевые клиенты</th><th>Гипотеза</th></tr>{cl_rows}</table>
 <h2>Какие данные запросить дальше</h2>
@@ -203,8 +204,10 @@ def build_index(meta: dict, n_top: int, out_path: Path, facts: dict | None = Non
         items.append(f"<b>Проверка устойчивости.</b> Если сдвинуть любой порог ролей на шаг, топ-20 сохраняется "
                      f"не меньше чем на {f['overlap']}%.")
     if "cutoff" in f:
-        items.append(f"<b>Граница выборки.</b> {_int(int(f['cutoff']))} клиентов 4-го колена не записаны в конечные получатели: "
-                     f"по ним нужен запрос исходящих переводов (next_requests.csv).")
+        c = int(f["cutoff"])
+        items.append(f"<b>Граница выборки.</b> На 4-м колене {_int(c)} {plural(c, 'клиент', 'клиента', 'клиентов')} "
+                     f"без исходящих в выгрузке. Их не записываем в конечные получатели: по ним нужен запрос исходящих "
+                     f"переводов (next_requests.csv).")
     items += [
         "<b>AI-ассистент</b> (запускается локально с ключом API): отвечает на вопросы по сети через инструменты графа, "
         "каждый gid в ответе проверяется кодом, готовит черновик служебной записки.",
@@ -215,7 +218,7 @@ def build_index(meta: dict, n_top: int, out_path: Path, facts: dict | None = Non
 <title>Граф денег</title><style>{INDEX_CSS}</style></head><body><div class="w">
 <h1>Граф денег: кого проверять первым</h1>
 <div class="sub">HackAlem AI, трек «Финансы», кейс Freedom · команда git push --force</div>
-<p>Инструмент для AML-аналитика. На входе {meta['n_seed']} известных участников и сеть их переводов {_e(_period(meta['period']))}.
+<p>Инструмент для AML-аналитика. На входе известные участники ({meta['n_seed']} seed) и сеть их переводов {_e(_period(meta['period']))}.
 На выходе у каждого клиента роль, кластер и приоритет с числовым обоснованием, список на проверку и готовые запросы данных.</p>
 <div class="kpis">{''.join(f'<div class="kpi"><b>{_e(v)}</b><span>{_e(t)}</span></div>' for v, t in kpis)}</div>
 <div class="btns"><a class="btn" href="viewer.html">Схема сети</a><a class="btn alt" href="report.html">Аналитическая справка</a></div>
