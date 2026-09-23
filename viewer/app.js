@@ -128,6 +128,7 @@
     selected=gid; refresh(); showDetails(n);
     network.selectNodes([gid],false);
     network.focus(gid,{scale:1.3,animation:false});
+    if(window.innerWidth < 1100) $("details").scrollIntoView({behavior:"smooth", block:"start"});
     if(writeHash && location.hash !== `#gid=${encodeURIComponent(gid)}`) location.hash = `gid=${encodeURIComponent(gid)}`;
     status(`Выбран ${gid}.${reset ? " Фильтры сброшены, чтобы показать узел." : ""}`);
   }

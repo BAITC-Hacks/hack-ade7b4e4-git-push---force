@@ -29,7 +29,7 @@ td{padding:6px 8px;border-bottom:1px solid #eef2f7;vertical-align:top}td.n{text-
 .gid{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#1d4ed8;text-decoration:none;white-space:nowrap}
 .role{display:inline-block;padding:1px 8px;border-radius:10px;color:#fff;font-size:11.5px;white-space:nowrap}
 .muted{color:#7b8794;font-size:12px}footer{margin-top:28px;color:#7b8794;font-size:12px}
-@media (max-width:700px){.page{margin:0;border-radius:0;padding:20px 16px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}table{display:block;overflow-x:auto}.flow .arrow{display:none!important}}
+@media (max-width:700px){.page{margin:0;border-radius:0;padding:20px 16px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}table{width:100%;table-layout:fixed}td,th{padding:5px 4px;word-break:break-word}td.n,.gid,.role{white-space:normal}.gid{font-size:11px}table.top td:nth-child(4),table.top th:nth-child(4){display:none}table.top th:first-child{width:24px}.flow .arrow{display:none!important}}
 @media print{body{background:#fff}.page{box-shadow:none;margin:0;max-width:none;padding:0 8mm}h2{break-after:avoid}tr{break-inside:avoid}}
 """
 
@@ -136,7 +136,7 @@ def build_report(df: pd.DataFrame, clusters: pd.DataFrame, top: pd.DataFrame, re
 <div><b>Результат</b>3 CSV, схема сети, эта справка, AI-ассистент</div></div>
 <h2>Главное</h2><ul class="key">{''.join(f'<li>{p}</li>' for p in key_points)}</ul>
 <h2>Кого проверять первым</h2>
-<table><tr><th>№</th><th>gid</th><th>Роль</th><th>Приоритет</th><th>Почему</th></tr>{top_rows}</table>
+<table class="top"><tr><th>№</th><th>gid</th><th>Роль</th><th>Приоритет</th><th>Почему</th></tr>{top_rows}</table>
 <p class="muted">Полный список: top_nodes.csv (топ-{len(top)}) и nodes_roles.csv (все {_int(n_nodes)} клиентов). Клик по gid открывает клиента на схеме сети.</p>
 <h2>Группы с несколькими известными участниками</h2>
 <table><tr><th>Кластер</th><th>Клиентов</th><th>Seed</th><th>Оборот внутри</th><th>Ключевые клиенты</th><th>Гипотеза</th></tr>{cl_rows}</table>
