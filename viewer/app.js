@@ -12,6 +12,8 @@
   const number = value => value == null ? "—" : new Intl.NumberFormat("ru-RU", {maximumFractionDigits: 2}).format(value).replace(/[\u00a0\u202f]/g, " ");
   const money = value => `${number(value)} ₸`;
   const roles = new Map(graph.roles.map(r => [r.key, r]));
+  const clusters = new Map(graph.clusters.map(c => [String(c.cluster_id), c]));
+  const clusterLabel = id => `${id} · стабильность: ${number(clusters.get(String(id))?.stability)}`;
   const byId = new Map(graph.nodes.map(n => [n.id, n]));
   const incoming = new Map(graph.nodes.map(n => [n.id, []]));
   const outgoing = new Map(graph.nodes.map(n => [n.id, []]));
@@ -52,16 +54,19 @@
     }));
     edgeData.update(graph.edges.map(e => ({id:e.viewerId,hidden:!visible.has(e.source)||!visible.has(e.target),color:{color:selected ? e.source === selected ? "#d97706" : e.target === selected ? "#2563eb" : "#e7ecf1" : "#bdcbd7",inherit:false,opacity:selected && e.source !== selected && e.target !== selected ? 0.2 : 0.85}})));
     $("visible-count").textContent = `${number(visible.size)} из ${number(graph.nodes.length)} узлов`;
-    const c = graph.clusters.find(c => String(c.cluster_id) === cluster);
-    $("cluster-info").textContent = c ? `${c.hypothesis} · Узлов: ${number(c.n_nodes)} · Seed: ${number(c.n_seed)} · Внутренние переводы: ${money(c.sum_kzt_internal)}` : "";
+    const c = clusters.get(cluster);
+    $("cluster-info").textContent = c ? `Кластер ${clusterLabel(c.cluster_id)} · ${c.hypothesis} · Узлов: ${number(c.n_nodes)} · Seed: ${number(c.n_seed)} · Внутренние переводы: ${money(c.sum_kzt_internal)}` : "";
   }
   function showDetails(n) {
     const panel = $("details"); panel.replaceChildren();
     panel.append(el("div", "КАРТОЧКА КЛИЕНТА", "eyebrow"), el("h2", n.id, "node-id gid"), el("span",roleLabel(n.role),"pill"));
     if(n.is_seed) panel.append(el("span","Исходный узел · seed","pill"));
+    if(typeof n.card === "string" && n.card.trim()) {
+      panel.append(el("h3","Карточка для проверки"),el("p",n.card,"explanation node-card"));
+    }
     const metrics = el("dl",undefined,"metrics");
     const counterparties = new Set([...incoming.get(n.id).map(e=>e.source),...outgoing.get(n.id).map(e=>e.target)]).size;
-    for(const [label,value] of [["Уверенность роли",number(n.role_score)],["Приоритет",number(n.priority_score)],["Место в топе",n.rank ?? "Вне топа"],["Кластер",n.cluster_id],["Колено",n.depth],["Исходный (seed)",n.is_seed ? "Да" : "Нет"],["Контрагентов",number(counterparties)],["Вход / выход: контрагенты",`${number(n.in_deg)} / ${number(n.out_deg)}`],["Сумма входа",money(n.in_kzt)],["Сумма выхода",money(n.out_kzt)],["Транзакции: вход / выход",`${number(n.in_tx)} / ${number(n.out_tx)}`],["Выход / вход",number(n.pass_through)],["Seed выше по цепочке",number(n.seeds_upstream)]]) {
+    for(const [label,value] of [["Уверенность роли",number(n.role_score)],["Приоритет",number(n.priority_score)],["Место в топе",n.rank ?? "Вне топа"],["Кластер",clusterLabel(n.cluster_id)],["Колено",n.depth],["Исходный (seed)",n.is_seed ? "Да" : "Нет"],["Контрагентов",number(counterparties)],["Вход / выход: контрагенты",`${number(n.in_deg)} / ${number(n.out_deg)}`],["Сумма входа",money(n.in_kzt)],["Сумма выхода",money(n.out_kzt)],["Транзакции: вход / выход",`${number(n.in_tx)} / ${number(n.out_tx)}`],["Выход / вход",number(n.pass_through)],["Seed выше по цепочке",number(n.seeds_upstream)]]) {
       const cell = el("div",undefined,"metric"); cell.append(el("dt",label),el("dd",value));metrics.append(cell);
     }
     panel.append(metrics);
@@ -100,7 +105,7 @@
   }
   function readHash() {
     const gid = new URLSearchParams(location.hash.slice(1)).get("gid");
-    if(gid) selectNode(gid,false); else clearSelection();
+    if(gid) { if(gid !== selected) selectNode(gid,false); } else if(selected) clearSelection();
   }
   function search(submit = false) {
     const query = $("search").value.trim();
@@ -113,7 +118,7 @@
     matches.slice(0,50).forEach(n=>$("search-results").append(gidLink(n.id)));
   }
   $("summary").textContent = `${number(graph.meta.n_nodes)} клиентов · ${number(graph.meta.n_edges)} связей · ${money(graph.meta.turnover_kzt)} · ${graph.meta.period}`;
-  clusterIds.forEach(id=>{const option=el("option",`Кластер ${id}`);option.value=id;$("cluster").append(option);});
+  clusterIds.forEach(id=>{const option=el("option",`Кластер ${clusterLabel(id)}`);option.value=id;$("cluster").append(option);});
   graph.roles.forEach(role=>{
     const row=el("div",undefined,"legend-item"), label=el("div",undefined,"legend-label"), swatch=el("span",undefined,"swatch");
     swatch.style.backgroundColor=role.color;label.append(swatch,el("span",role.label));row.append(label,el("p",role.rule,"legend-rule"));$("legend").append(row);

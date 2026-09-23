@@ -114,18 +114,33 @@ def test_sample_metrics_match_edges():
         assert n["out_kzt"] == sum(e["sum_kzt"] for e in out)
 
 
-def test_browser_offline_interactions(tmp_path):
+@pytest.mark.parametrize("dataset", ["sample", "real"])
+def test_browser_offline_interactions(tmp_path, dataset):
     """Use an existing browser, without a server or extra Python packages."""
     candidates = [shutil.which("chromium"), shutil.which("google-chrome"),
                   str(Path(os.environ.get("PROGRAMFILES", "C:/Program Files")) / "Google/Chrome/Application/chrome.exe")]
     browser = next((p for p in candidates if p and Path(p).is_file()), None)
     if browser is None:
         pytest.skip("No local Chromium browser available")
+    source = SAMPLE if dataset == "sample" else ROOT / "out" / "graph.json"
+    if not source.is_file():
+        pytest.skip("Real graph is not available locally")
+    graph = json.loads(source.read_text(encoding="utf-8"))
+    if dataset == "sample":
+        graph["nodes"][0]["card"] = 'Первая строка\nВторая строка\n<img src="invalid" onerror="alert(1)">'
+        graph["clusters"][0]["stability"] = 0.87
+        source = tmp_path / "graph.json"
+        source.write_text(json.dumps(graph, ensure_ascii=False), encoding="utf-8")
+    else:
+        assert len(graph["nodes"]) == 2248
+        assert all(isinstance(n.get("card"), str) for n in graph["nodes"])
+        assert all("stability" in c for c in graph["clusters"])
     target = tmp_path / "viewer.html"
-    build_viewer(SAMPLE, target)
+    build_viewer(source, target)
     probe = r'''
 <script>
 window.addEventListener("load", () => {
+  const timings = {open_ms: performance.now()};
   const results = [];
   const check = (name, condition) => results.push([name, Boolean(condition)]);
   const $ = id => document.getElementById(id);
@@ -133,16 +148,30 @@ window.addEventListener("load", () => {
     const g = JSON.parse($("graph-data").textContent);
     check("canvas", $("network").querySelector("canvas"));
     check("deep link", $("details").textContent.includes(g.nodes[0].id));
-    $("search").value = g.nodes[0].id.slice(0,-2);
+    const card = $("details").querySelector(".node-card");
+    check("card text", card && card.textContent === g.nodes[0].card);
+    check("card newlines", card && getComputedStyle(card).whiteSpace === "pre-wrap");
+    check("card not HTML", card && !card.querySelector("img"));
+    const cluster = g.clusters.find(c => c.cluster_id === g.nodes[0].cluster_id);
+    const clusterMetric = [...$("details").querySelectorAll(".metric")].find(m => m.querySelector("dt").textContent === "Кластер");
+    const stability = new Intl.NumberFormat("ru-RU", {maximumFractionDigits:2}).format(cluster.stability);
+    check("node cluster stability", clusterMetric.textContent.includes(`стабильность: ${stability}`));
+    $("cluster").value = String(cluster.cluster_id);
+    $("cluster").dispatchEvent(new Event("change"));
+    check("filter cluster stability", $("cluster-info").textContent.includes(`стабильность: ${stability}`));
+    $("search").value = g.nodes[0].id.slice(0,1);
     $("search").dispatchEvent(new Event("input"));
     check("prefix", $("search-results").querySelectorAll("a").length > 1);
-    $("cluster").value = "2";
+    const target = g.nodes.find(n => n.role === "peripheral" && g.edges.some(e => e.source === n.id || e.target === n.id));
+    $("cluster").value = String(g.clusters.find(c => c.cluster_id !== target.cluster_id).cluster_id);
     $("cluster").dispatchEvent(new Event("change"));
     $("hide-peripheral").checked = true;
     $("hide-peripheral").dispatchEvent(new Event("change"));
-    $("search").value = g.nodes[0].id;
+    $("search").value = target.id;
+    const searchStart = performance.now();
     $("search-form").dispatchEvent(new Event("submit", {cancelable:true}));
-    check("exact gid", $("details").textContent.includes(g.nodes[0].id));
+    timings.search_ms = performance.now() - searchStart;
+    check("exact gid", $("details").querySelector("h2").textContent === target.id);
     check("reveal hidden", $("cluster").value === "" && !$("hide-peripheral").checked);
     const neighbor = $("details").querySelector("a");
     const neighborId = neighbor.textContent;
@@ -160,17 +189,21 @@ window.addEventListener("load", () => {
   } catch(error) { results.push([String(error),false]); }
   const output = document.createElement("pre");
   output.id = "browser-results";
-  output.textContent = JSON.stringify(results);
+  output.textContent = JSON.stringify({results, timings});
   document.body.append(output);
 });
 </script>'''
     target.write_text(target.read_text(encoding="utf-8").replace("</body>",probe+"</body>"),encoding="utf-8")
-    gid = json.loads(SAMPLE.read_text(encoding="utf-8"))["nodes"][0]["id"]
+    gid = graph["nodes"][0]["id"]
     result = subprocess.run([browser,"--headless","--disable-gpu","--no-first-run","--no-default-browser-check",
                              "--disable-background-networking",f"--user-data-dir={tmp_path / 'profile'}",
                              "--dump-dom","--timeout=10000",target.as_uri()+"#gid="+gid],capture_output=True,encoding="utf-8",timeout=40)
     match = re.search(r'<pre id="browser-results">(.*?)</pre>',result.stdout,re.S)
     assert match, result.stderr[-3000:]
-    results = json.loads(html_module.unescape(match[1]))
+    report = json.loads(html_module.unescape(match[1]))
+    results = report["results"]
+    print(f"{dataset}: {len(graph['nodes'])} nodes; {report['timings']}")
+    assert report["timings"]["open_ms"] < 5000, report
+    assert report["timings"]["search_ms"] < 1000, report
     assert len(results) >= 9, results
     assert all(passed for _,passed in results), results
