@@ -1,3 +1,10 @@
+# Pipeline (required): python -m pipeline --data data --out out
+pandas>=2.0
+pyarrow>=14.0
+networkx>=3.1
+numpy>=1.24
+
+# AI assistant for the analyst (optional): python -m uvicorn app.main:app --port 8000
 fastapi>=0.115
 uvicorn>=0.30
 openai>=2.0
