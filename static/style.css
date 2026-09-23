@@ -258,6 +258,25 @@ h1,h2,h3,p {
   width:100%;
   margin:0 auto
 }
+.site-nav {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px 10px;
+  font-size:14px;
+  line-height:1.5;
+  margin-bottom:16px
+}
+.site-nav a,.site-nav strong {
+  white-space:nowrap
+}
+.site-nav a {
+  color:var(--green);
+  font-weight:400
+}
+.site-nav strong {
+  font-weight:700
+}
 .page-header {
   display:flex;
   align-items:center;

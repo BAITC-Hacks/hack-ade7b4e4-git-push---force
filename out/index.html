@@ -2,6 +2,8 @@
 <title>Граф денег</title><style>
 *{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#1f2933;font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
 .w{max-width:840px;margin:40px auto;background:#fff;border-radius:12px;padding:32px 36px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.site-nav{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:14px;line-height:1.5;margin-bottom:16px}
+.site-nav a,.site-nav strong{white-space:nowrap}.site-nav a{color:#1d4ed8;font-weight:400}.site-nav strong{font-weight:700}
 h1{margin:0 0 6px;font-size:26px;line-height:1.25}h2{font-size:17px;margin:26px 0 6px}.sub{color:#616e7c;font-size:14px}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0}.kpi{background:#f5f7fa;border-radius:10px;padding:12px 14px}
 .kpi b{display:block;font-size:26px;line-height:1.2;color:#0f5132}.kpi span{display:block;font-size:12.5px;line-height:1.4;color:#52606d}
@@ -14,6 +16,12 @@ code{background:#f5f7fa;padding:1px 5px;border-radius:4px;font-size:13px}
 table.ba{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}table.ba th{text-align:left;background:#f5f7fa;padding:7px 10px}table.ba td{padding:7px 10px;border-bottom:1px solid #eef2f7;vertical-align:top}table.ba td:last-child{color:#0f5132;font-weight:600}
 @media (max-width:640px){.w{margin:0;border-radius:0;padding:22px 16px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:22px}}
 </style></head><body><div class="w">
+<nav class="site-nav" aria-label="Основная навигация">
+<strong aria-current="page">Главная</strong><span aria-hidden="true">·</span>
+<a href="viewer.html">Схема сети</a><span aria-hidden="true">·</span>
+<a href="report.html">Аналитическая справка</a><span aria-hidden="true">·</span>
+<a href="https://graf-deneg-ai.vercel.app">AI-ассистент</a>
+</nav>
 <h1>Граф денег: кого проверять первым</h1>
 <div class="sub">HackAlem AI, трек «Финансы», кейс Freedom · команда git push --force</div>
 <p>Инструмент для AML-аналитика. На входе известные участники (81 seed) и сеть их переводов с 01.07.2026 по 31.07.2026.

@@ -17,6 +17,8 @@ from .fmt import kzt, plural
 CSS = """
 *{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#1f2933;font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
 .page{max-width:1080px;margin:24px auto;background:#fff;padding:32px 40px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.site-nav{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:14px;line-height:1.5;margin-bottom:16px}
+.site-nav a,.site-nav strong{white-space:nowrap}.site-nav a{color:#1d4ed8;font-weight:400}.site-nav strong{font-weight:700}
 h1{font-size:24px;margin:0 0 4px}h2{font-size:18px;margin:28px 0 10px;padding-top:12px;border-top:1px solid #e4e7eb}
 .sub{color:#616e7c;font-size:13px}.warn{background:#fff8e6;border:1px solid #f5d98b;border-radius:8px;padding:8px 12px;margin:14px 0;font-size:13px}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.kpi{background:#f5f7fa;border-radius:10px;padding:12px 14px}
@@ -124,6 +126,12 @@ def build_report(df: pd.DataFrame, clusters: pd.DataFrame, top: pd.DataFrame, re
 
     page = f"""<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Аналитическая справка: граф денег</title><style>{CSS}</style></head><body><div class="page">
+<nav class="site-nav" aria-label="Основная навигация">
+<a href="index.html">Главная</a><span aria-hidden="true">·</span>
+<a href="viewer.html">Схема сети</a><span aria-hidden="true">·</span>
+<strong aria-current="page">Аналитическая справка</strong><span aria-hidden="true">·</span>
+<a href="{_e(ASSISTANT_URL)}">AI-ассистент</a>
+</nav>
 <h1>Аналитическая справка по сети переводов</h1>
 <div class="sub">Период {_e(_period(meta['period']))} · {n_seed} seed, {_int(meta['n_edges'])} {plural(meta['n_edges'], 'связь', 'связи', 'связей')}, {_int(meta['n_tx'])} {plural(meta['n_tx'], 'транзакция', 'транзакции', 'транзакций')} ·
 сформировано {datetime.now().strftime('%d.%m.%Y %H:%M')} командой <code>python -m pipeline</code></div>
@@ -167,6 +175,8 @@ def build_report(df: pd.DataFrame, clusters: pd.DataFrame, top: pd.DataFrame, re
 INDEX_CSS = """
 *{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#1f2933;font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
 .w{max-width:840px;margin:40px auto;background:#fff;border-radius:12px;padding:32px 36px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.site-nav{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:14px;line-height:1.5;margin-bottom:16px}
+.site-nav a,.site-nav strong{white-space:nowrap}.site-nav a{color:#1d4ed8;font-weight:400}.site-nav strong{font-weight:700}
 h1{margin:0 0 6px;font-size:26px;line-height:1.25}h2{font-size:17px;margin:26px 0 6px}.sub{color:#616e7c;font-size:14px}
 .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0}.kpi{background:#f5f7fa;border-radius:10px;padding:12px 14px}
 .kpi b{display:block;font-size:26px;line-height:1.2;color:#0f5132}.kpi span{display:block;font-size:12.5px;line-height:1.4;color:#52606d}
@@ -239,6 +249,12 @@ def build_index(meta: dict, n_top: int, out_path: Path, facts: dict | None = Non
     ]
     page = f"""<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Граф денег</title><style>{INDEX_CSS}</style></head><body><div class="w">
+<nav class="site-nav" aria-label="Основная навигация">
+<strong aria-current="page">Главная</strong><span aria-hidden="true">·</span>
+<a href="viewer.html">Схема сети</a><span aria-hidden="true">·</span>
+<a href="report.html">Аналитическая справка</a><span aria-hidden="true">·</span>
+<a href="{_e(ASSISTANT_URL)}">AI-ассистент</a>
+</nav>
 <h1>Граф денег: кого проверять первым</h1>
 <div class="sub">HackAlem AI, трек «Финансы», кейс Freedom · команда git push --force</div>
 <p>Инструмент для AML-аналитика. На входе известные участники ({meta['n_seed']} seed) и сеть их переводов {_e(_period(meta['period']))}.

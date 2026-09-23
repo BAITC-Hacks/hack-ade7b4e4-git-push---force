@@ -93,6 +93,8 @@ def test_report(out):
     html = (d / "report.html").read_text(encoding="utf-8")
     top1 = str(pd.read_csv(d / "top_nodes.csv")["gid"].iloc[0])
     assert top1 in html and "гипотез" in html.lower()
+    from pipeline.report import ASSISTANT_URL
+    html = html.replace(ASSISTANT_URL, "")  # единственная внешняя ссылка: онлайн-ассистент
     assert "http://" not in html and "https://" not in html  # справка работает без интернета
 
 

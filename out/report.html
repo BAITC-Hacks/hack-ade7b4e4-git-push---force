@@ -2,6 +2,8 @@
 <title>Аналитическая справка: граф денег</title><style>
 *{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#1f2933;font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
 .page{max-width:1080px;margin:24px auto;background:#fff;padding:32px 40px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.site-nav{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:14px;line-height:1.5;margin-bottom:16px}
+.site-nav a,.site-nav strong{white-space:nowrap}.site-nav a{color:#1d4ed8;font-weight:400}.site-nav strong{font-weight:700}
 h1{font-size:24px;margin:0 0 4px}h2{font-size:18px;margin:28px 0 10px;padding-top:12px;border-top:1px solid #e4e7eb}
 .sub{color:#616e7c;font-size:13px}.warn{background:#fff8e6;border:1px solid #f5d98b;border-radius:8px;padding:8px 12px;margin:14px 0;font-size:13px}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}.kpi{background:#f5f7fa;border-radius:10px;padding:12px 14px}
@@ -17,9 +19,15 @@ td{padding:6px 8px;border-bottom:1px solid #eef2f7;vertical-align:top}td.n{text-
 @media (max-width:700px){.page{margin:0;border-radius:0;padding:20px 16px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}table{width:100%;table-layout:fixed}td,th{padding:5px 4px;word-break:break-word}td.n,.gid,.role{white-space:normal}.gid{font-size:11px}table.top td:nth-child(4),table.top th:nth-child(4){display:none}table.top th:first-child{width:24px}.flow .arrow{display:none!important}}
 @media print{body{background:#fff}.page{box-shadow:none;margin:0;max-width:none;padding:0 8mm}h2{break-after:avoid}tr{break-inside:avoid}}
 </style></head><body><div class="page">
+<nav class="site-nav" aria-label="Основная навигация">
+<a href="index.html">Главная</a><span aria-hidden="true">·</span>
+<a href="viewer.html">Схема сети</a><span aria-hidden="true">·</span>
+<strong aria-current="page">Аналитическая справка</strong><span aria-hidden="true">·</span>
+<a href="https://graf-deneg-ai.vercel.app">AI-ассистент</a>
+</nav>
 <h1>Аналитическая справка по сети переводов</h1>
 <div class="sub">Период с 01.07.2026 по 31.07.2026 · 81 seed, 3 119 связей, 4 840 транзакций ·
-сформировано 23.09.2026 17:22 командой <code>python -m pipeline</code></div>
+сформировано 23.09.2026 17:28 командой <code>python -m pipeline</code></div>
 <div class="warn">Роли и приоритеты являются <b>гипотезами для проверки</b>, а не выводами о виновности. Данные: только
 исходящие внутрибанковские переводы от 5 000 ₸ на 4 колена, без атрибутов клиентов.</div>
 <div class="kpis"><div class="kpi"><b>81</b><span>известных участников на входе (seed)</span></div><div class="kpi"><b>2 248</b><span>клиентов в сети: роль, кластер и приоритет у каждого</span></div><div class="kpi"><b>30</b><span>клиентов в топе на проверку, у каждого обоснование</span></div><div class="kpi"><b>365,89 млн ₸</b><span>оборот сети за период</span></div></div>
