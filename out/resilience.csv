@@ -1,0 +1,9 @@
+strategy,removed_top_n,largest_component,largest_component_before,n_components,turnover_share_touched
+priority,5,1644,1877,180,0.1392
+priority,10,1554,1877,235,0.1733
+priority,20,1289,1877,389,0.2769
+priority,30,1086,1877,505,0.3384
+degree,5,1657,1877,394,0.1372
+degree,10,1428,1877,527,0.2309
+degree,20,1188,1877,724,0.3028
+degree,30,942,1877,852,0.383

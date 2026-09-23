@@ -3,6 +3,7 @@ pandas>=2.0
 pyarrow>=14.0
 networkx>=3.1
 numpy>=1.24
+scipy>=1.10
 
 # AI assistant for the analyst (optional): python -m uvicorn app.main:app --port 8000
 fastapi>=0.115
