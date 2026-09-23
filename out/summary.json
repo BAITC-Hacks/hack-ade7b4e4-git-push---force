@@ -24,15 +24,15 @@
   "sensitivity_min_top20_overlap": 0.85,
   "cluster_stability_median": 1.0,
   "timings_s": {
-    "load": 0.21,
-    "features": 2.24,
-    "roles": 2.63,
-    "clusters": 2.74,
-    "priority": 3.89,
-    "layout": 4.92,
-    "export": 5.46,
-    "sensitivity": 10.13,
-    "viewer": 10.41
+    "load": 0.06,
+    "features": 2.08,
+    "roles": 2.46,
+    "clusters": 2.56,
+    "priority": 4.11,
+    "layout": 5.33,
+    "export": 5.85,
+    "sensitivity": 10.93,
+    "viewer": 11.02
   },
   "viewer": "экран: out\\viewer.html"
 }
