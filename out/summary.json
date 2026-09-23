@@ -24,16 +24,16 @@
   "sensitivity_min_top20_overlap": 0.85,
   "cluster_stability_median": 1.0,
   "timings_s": {
-    "load": 0.44,
-    "features": 2.45,
-    "roles": 2.5,
-    "clusters": 2.62,
-    "priority": 3.54,
-    "layout": 4.35,
-    "export": 4.79,
-    "sensitivity": 5.4,
-    "report": 5.43,
-    "viewer": 5.5
+    "load": 0.06,
+    "features": 2.09,
+    "roles": 2.16,
+    "clusters": 2.27,
+    "priority": 3.55,
+    "layout": 4.61,
+    "export": 5.15,
+    "sensitivity": 5.95,
+    "report": 5.98,
+    "viewer": 6.14
   },
-  "viewer": "экран: out\\viewer.html"
+  "viewer": "экран не собран: OSError: [Errno 22] Invalid argument: 'out\\\\viewer.html'"
 }
