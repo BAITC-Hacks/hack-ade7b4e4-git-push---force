@@ -1,0 +1,599 @@
+[
+ {
+  "client_id": "C001",
+  "name": "Алия А.",
+  "city": "Астана",
+  "age": 25,
+  "segment": "mass",
+  "monthly_income_kzt": 800000,
+  "monthly_debt_payments_kzt": 240000,
+  "products": [
+   "карта"
+  ],
+  "client_since": 2023
+ },
+ {
+  "client_id": "C002",
+  "name": "Жанна И.",
+  "city": "Алматы",
+  "age": 22,
+  "segment": "mass",
+  "monthly_income_kzt": 520000,
+  "monthly_debt_payments_kzt": 104000,
+  "products": [
+   "кредит",
+   "карта",
+   "рассрочка"
+  ],
+  "client_since": 2026
+ },
+ {
+  "client_id": "C003",
+  "name": "Олжас Д.",
+  "city": "Караганда",
+  "age": 45,
+  "segment": "mass",
+  "monthly_income_kzt": 650000,
+  "monthly_debt_payments_kzt": 0,
+  "products": [
+   "депозит",
+   "карта"
+  ],
+  "client_since": 2019
+ },
+ {
+  "client_id": "C004",
+  "name": "Айгерим Н.",
+  "city": "Актобе",
+  "age": 30,
+  "segment": "sme",
+  "monthly_income_kzt": 180000,
+  "monthly_debt_payments_kzt": 36000,
+  "products": [
+   "кредит",
+   "депозит"
+  ],
+  "client_since": 2016
+ },
+ {
+  "client_id": "C005",
+  "name": "Жанна Н.",
+  "city": "Атырау",
+  "age": 20,
+  "segment": "mass",
+  "monthly_income_kzt": 650000,
+  "monthly_debt_payments_kzt": 0,
+  "products": [
+   "ИП-счёт",
+   "кредит"
+  ],
+  "client_since": 2016
+ },
+ {
+  "client_id": "C006",
+  "name": "Ольга С.",
+  "city": "Астана",
+  "age": 26,
+  "segment": "mass",
+  "monthly_income_kzt": 250000,
+  "monthly_debt_payments_kzt": 100000,
+  "products": [
+   "карта",
+   "депозит"
+  ],
+  "client_since": 2022
+ },
+ {
+  "client_id": "C007",
+  "name": "Динара М.",
+  "city": "Шымкент",
+  "age": 29,
+  "segment": "sme",
+  "monthly_income_kzt": 250000,
+  "monthly_debt_payments_kzt": 100000,
+  "products": [
+   "депозит",
+   "рассрочка"
+  ],
+  "client_since": 2016
+ },
+ {
+  "client_id": "C008",
+  "name": "Бекзат П.",
+  "city": "Шымкент",
+  "age": 37,
+  "segment": "sme",
+  "monthly_income_kzt": 180000,
+  "monthly_debt_payments_kzt": 0,
+  "products": [
+   "депозит",
+   "ИП-счёт"
+  ],
+  "client_since": 2023
+ },
+ {
+  "client_id": "C009",
+  "name": "Тимур Р.",
+  "city": "Атырау",
+  "age": 23,
+  "segment": "mass",
+  "monthly_income_kzt": 800000,
+  "monthly_debt_payments_kzt": 80000,
+  "products": [
+   "рассрочка",
+   "кредит"
+  ],
+  "client_since": 2018
+ },
+ {
+  "client_id": "C010",
+  "name": "Айгерим Н.",
+  "city": "Усть-Каменогорск",
+  "age": 39,
+  "segment": "mass",
+  "monthly_income_kzt": 800000,
+  "monthly_debt_payments_kzt": 0,
+  "products": [
+   "кредит",
+   "депозит",
+   "рассрочка"
+  ],
+  "client_since": 2015
+ },
+ {
+  "client_id": "C011",
+  "name": "Динара Ж.",
+  "city": "Павлодар",
+  "age": 24,
+  "segment": "premium",
+  "monthly_income_kzt": 250000,
+  "monthly_debt_payments_kzt": 75000,
+  "products": [
+   "кредит"
+  ],
+  "client_since": 2015
+ },
+ {
+  "client_id": "C012",
+  "name": "Ольга Ж.",
+  "city": "Караганда",
+  "age": 26,
+  "segment": "mass",
+  "monthly_income_kzt": 800000,
+  "monthly_debt_payments_kzt": 160000,
+  "products": [
+   "кредит",
+   "ИП-счёт"
+  ],
+  "client_since": 2026
+ },
+ {
+  "client_id": "C013",
+  "name": "Айгерим Ш.",
+  "city": "Шымкент",
+  "age": 57,
+  "segment": "mass",
+  "monthly_income_kzt": 320000,
+  "monthly_debt_payments_kzt": 0,
+  "products": [
+   "депозит",
+   "карта"
+  ],
+  "client_since": 2020
+ },
+ {
+  "client_id": "C014",
+  "name": "Дмитрий Т.",
+  "city": "Павлодар",
+  "age": 27,
+  "segment": "premium",
+  "monthly_income_kzt": 250000,
+  "monthly_debt_payments_kzt": 25000,
+  "products": [
+   "депозит",
+   "карта",
+   "кредит"
+  ],
+  "client_since": 2022
+ },
+ {
+  "client_id": "C015",
+  "name": "Анна Л.",
+  "city": "Караганда",
+  "age": 22,
+  "segment": "premium",
+  "monthly_income_kzt": 520000,
+  "monthly_debt_payments_kzt": 104000,
+  "products": [
+   "карта",
+   "рассрочка"
+  ],
+  "client_since": 2017
+ },
+ {
+  "client_id": "C016",
+  "name": "Ольга Б.",
+  "city": "Астана",
+  "age": 63,
+  "segment": "mass",
+  "monthly_income_kzt": 250000,
+  "monthly_debt_payments_kzt": 0,
+  "products": [
+   "карта"
+  ],
+  "client_since": 2016
+ },
+ {
+  "client_id": "C017",
+  "name": "Ерлан Ж.",
+  "city": "Актобе",
+  "age": 26,
+  "segment": "premium",
+  "monthly_income_kzt": 180000,
+  "monthly_debt_payments_kzt": 72000,
+  "products": [
+   "рассрочка",
+   "карта",
+   "ИП-счёт"
+  ],
+  "client_since": 2019
+ },
+ {
+  "client_id": "C018",
+  "name": "Сергей К.",
+  "city": "Павлодар",
+  "age": 47,
+  "segment": "sme",
+  "monthly_income_kzt": 250000,
+  "monthly_debt_payments_kzt": 75000,
+  "products": [
+   "депозит"
+  ],
+  "client_since": 2020
+ },
+ {
+  "client_id": "C019",
+  "name": "Тимур У.",
+  "city": "Актобе",
+  "age": 57,
+  "segment": "mass",
+  "monthly_income_kzt": 400000,
+  "monthly_debt_payments_kzt": 120000,
+  "products": [
+   "ИП-счёт",
+   "кредит",
+   "карта"
+  ],
+  "client_since": 2015
+ },
+ {
+  "client_id": "C020",
+  "name": "Олжас Н.",
+  "city": "Караганда",
+  "age": 32,
+  "segment": "sme",
+  "monthly_income_kzt": 320000,
+  "monthly_debt_payments_kzt": 96000,
+  "products": [
+   "депозит"
+  ],
+  "client_since": 2026
+ },
+ {
+  "client_id": "C021",
+  "name": "Жанна У.",
+  "city": "Актобе",
+  "age": 51,
+  "segment": "mass",
+  "monthly_income_kzt": 250000,
+  "monthly_debt_payments_kzt": 75000,
+  "products": [
+   "ИП-счёт",
+   "кредит"
+  ],
+  "client_since": 2017
+ },
+ {
+  "client_id": "C022",
+  "name": "Нурлан И.",
+  "city": "Усть-Каменогорск",
+  "age": 28,
+  "segment": "premium",
+  "monthly_income_kzt": 250000,
+  "monthly_debt_payments_kzt": 0,
+  "products": [
+   "карта"
+  ],
+  "client_since": 2026
+ },
+ {
+  "client_id": "C023",
+  "name": "Анна М.",
+  "city": "Павлодар",
+  "age": 32,
+  "segment": "mass",
+  "monthly_income_kzt": 250000,
+  "monthly_debt_payments_kzt": 25000,
+  "products": [
+   "кредит"
+  ],
+  "client_since": 2020
+ },
+ {
+  "client_id": "C024",
+  "name": "Данияр П.",
+  "city": "Алматы",
+  "age": 64,
+  "segment": "mass",
+  "monthly_income_kzt": 800000,
+  "monthly_debt_payments_kzt": 80000,
+  "products": [
+   "ИП-счёт",
+   "депозит"
+  ],
+  "client_since": 2022
+ },
+ {
+  "client_id": "C025",
+  "name": "Руслан М.",
+  "city": "Шымкент",
+  "age": 64,
+  "segment": "sme",
+  "monthly_income_kzt": 520000,
+  "monthly_debt_payments_kzt": 156000,
+  "products": [
+   "кредит"
+  ],
+  "client_since": 2025
+ },
+ {
+  "client_id": "C026",
+  "name": "Данияр С.",
+  "city": "Караганда",
+  "age": 45,
+  "segment": "mass",
+  "monthly_income_kzt": 650000,
+  "monthly_debt_payments_kzt": 130000,
+  "products": [
+   "ИП-счёт"
+  ],
+  "client_since": 2018
+ },
+ {
+  "client_id": "C027",
+  "name": "Арман Ш.",
+  "city": "Павлодар",
+  "age": 46,
+  "segment": "sme",
+  "monthly_income_kzt": 320000,
+  "monthly_debt_payments_kzt": 128000,
+  "products": [
+   "карта",
+   "кредит"
+  ],
+  "client_since": 2016
+ },
+ {
+  "client_id": "C028",
+  "name": "Арман Ш.",
+  "city": "Караганда",
+  "age": 62,
+  "segment": "mass",
+  "monthly_income_kzt": 650000,
+  "monthly_debt_payments_kzt": 195000,
+  "products": [
+   "рассрочка",
+   "кредит",
+   "депозит"
+  ],
+  "client_since": 2025
+ },
+ {
+  "client_id": "C029",
+  "name": "Ольга Р.",
+  "city": "Павлодар",
+  "age": 21,
+  "segment": "mass",
+  "monthly_income_kzt": 800000,
+  "monthly_debt_payments_kzt": 0,
+  "products": [
+   "рассрочка",
+   "кредит"
+  ],
+  "client_since": 2022
+ },
+ {
+  "client_id": "C030",
+  "name": "Асель Б.",
+  "city": "Алматы",
+  "age": 26,
+  "segment": "mass",
+  "monthly_income_kzt": 250000,
+  "monthly_debt_payments_kzt": 25000,
+  "products": [
+   "карта",
+   "ИП-счёт"
+  ],
+  "client_since": 2018
+ },
+ {
+  "client_id": "C031",
+  "name": "Руслан П.",
+  "city": "Астана",
+  "age": 26,
+  "segment": "sme",
+  "monthly_income_kzt": 250000,
+  "monthly_debt_payments_kzt": 0,
+  "products": [
+   "депозит",
+   "рассрочка"
+  ],
+  "client_since": 2014
+ },
+ {
+  "client_id": "C032",
+  "name": "Ольга Е.",
+  "city": "Алматы",
+  "age": 39,
+  "segment": "premium",
+  "monthly_income_kzt": 320000,
+  "monthly_debt_payments_kzt": 32000,
+  "products": [
+   "карта"
+  ],
+  "client_since": 2025
+ },
+ {
+  "client_id": "C033",
+  "name": "Данияр Л.",
+  "city": "Павлодар",
+  "age": 57,
+  "segment": "sme",
+  "monthly_income_kzt": 520000,
+  "monthly_debt_payments_kzt": 156000,
+  "products": [
+   "депозит",
+   "карта"
+  ],
+  "client_since": 2024
+ },
+ {
+  "client_id": "C034",
+  "name": "Нурлан Р.",
+  "city": "Актобе",
+  "age": 27,
+  "segment": "mass",
+  "monthly_income_kzt": 800000,
+  "monthly_debt_payments_kzt": 160000,
+  "products": [
+   "депозит",
+   "рассрочка"
+  ],
+  "client_since": 2018
+ },
+ {
+  "client_id": "C035",
+  "name": "Данияр И.",
+  "city": "Астана",
+  "age": 49,
+  "segment": "mass",
+  "monthly_income_kzt": 400000,
+  "monthly_debt_payments_kzt": 40000,
+  "products": [
+   "депозит"
+  ],
+  "client_since": 2022
+ },
+ {
+  "client_id": "C036",
+  "name": "Сауле Н.",
+  "city": "Шымкент",
+  "age": 52,
+  "segment": "sme",
+  "monthly_income_kzt": 520000,
+  "monthly_debt_payments_kzt": 104000,
+  "products": [
+   "депозит"
+  ],
+  "client_since": 2026
+ },
+ {
+  "client_id": "C037",
+  "name": "Тимур П.",
+  "city": "Атырау",
+  "age": 45,
+  "segment": "sme",
+  "monthly_income_kzt": 800000,
+  "monthly_debt_payments_kzt": 80000,
+  "products": [
+   "карта",
+   "ИП-счёт"
+  ],
+  "client_since": 2016
+ },
+ {
+  "client_id": "C038",
+  "name": "Арман К.",
+  "city": "Актобе",
+  "age": 32,
+  "segment": "mass",
+  "monthly_income_kzt": 250000,
+  "monthly_debt_payments_kzt": 0,
+  "products": [
+   "ИП-счёт",
+   "рассрочка",
+   "карта"
+  ],
+  "client_since": 2022
+ },
+ {
+  "client_id": "C039",
+  "name": "Алия Д.",
+  "city": "Алматы",
+  "age": 53,
+  "segment": "premium",
+  "monthly_income_kzt": 520000,
+  "monthly_debt_payments_kzt": 0,
+  "products": [
+   "карта"
+  ],
+  "client_since": 2018
+ },
+ {
+  "client_id": "C040",
+  "name": "Анна М.",
+  "city": "Караганда",
+  "age": 35,
+  "segment": "sme",
+  "monthly_income_kzt": 520000,
+  "monthly_debt_payments_kzt": 104000,
+  "products": [
+   "карта",
+   "рассрочка",
+   "депозит"
+  ],
+  "client_since": 2018
+ },
+ {
+  "client_id": "C-DEMO-1",
+  "name": "Сауле Т.",
+  "city": "Астана",
+  "age": 58,
+  "segment": "mass",
+  "monthly_income_kzt": 280000,
+  "monthly_debt_payments_kzt": 0,
+  "products": [
+   "карта",
+   "депозит"
+  ],
+  "client_since": 2016
+ },
+ {
+  "client_id": "C-DEMO-2",
+  "name": "Арман К.",
+  "city": "Алматы",
+  "age": 34,
+  "segment": "mass",
+  "monthly_income_kzt": 600000,
+  "monthly_debt_payments_kzt": 250000,
+  "products": [
+   "карта",
+   "кредит"
+  ],
+  "client_since": 2019
+ },
+ {
+  "client_id": "C-DEMO-3",
+  "name": "Мадина Е.",
+  "city": "Астана",
+  "age": 27,
+  "segment": "premium",
+  "monthly_income_kzt": 900000,
+  "monthly_debt_payments_kzt": 90000,
+  "products": [
+   "карта",
+   "рассрочка"
+  ],
+  "client_since": 2021
+ }
+]

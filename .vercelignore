@@ -1,0 +1,13 @@
+.env
+.venv
+venv
+logs
+tests
+evals
+specs
+reviews
+docs
+.agents
+.codex
+scripts
+*.md

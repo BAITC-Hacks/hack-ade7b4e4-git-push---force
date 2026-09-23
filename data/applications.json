@@ -1,0 +1,643 @@
+[
+ {
+  "app_id": "A0034",
+  "client_id": "C018",
+  "ts": "2026-07-24T01:00:00",
+  "product": "credit_card",
+  "amount_kzt": 500000,
+  "term_months": 12,
+  "lender": "Банк B",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0019",
+  "client_id": "C007",
+  "ts": "2026-07-24T03:00:00",
+  "product": "microloan",
+  "amount_kzt": 300000,
+  "term_months": 3,
+  "lender": "МФО E",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0029",
+  "client_id": "C027",
+  "ts": "2026-07-24T04:00:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "МФО E",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0040",
+  "client_id": "C034",
+  "ts": "2026-07-25T04:00:00",
+  "product": "consumer_loan",
+  "amount_kzt": 1200000,
+  "term_months": 24,
+  "lender": "Банк B",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0016",
+  "client_id": "C034",
+  "ts": "2026-07-27T19:00:00",
+  "product": "consumer_loan",
+  "amount_kzt": 1200000,
+  "term_months": 24,
+  "lender": "Банк A",
+  "status": "pending"
+ },
+ {
+  "app_id": "A0005",
+  "client_id": "C023",
+  "ts": "2026-07-28T11:00:00",
+  "product": "consumer_loan",
+  "amount_kzt": 1200000,
+  "term_months": 24,
+  "lender": "МФО D",
+  "status": "pending"
+ },
+ {
+  "app_id": "A0006",
+  "client_id": "C039",
+  "ts": "2026-07-28T16:00:00",
+  "product": "microloan",
+  "amount_kzt": 300000,
+  "term_months": 3,
+  "lender": "Банк C",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0055",
+  "client_id": "C025",
+  "ts": "2026-07-28T17:00:00",
+  "product": "credit_card",
+  "amount_kzt": 500000,
+  "term_months": 12,
+  "lender": "МФО E",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0031",
+  "client_id": "C011",
+  "ts": "2026-07-29T21:00:00",
+  "product": "consumer_loan",
+  "amount_kzt": 1200000,
+  "term_months": 24,
+  "lender": "Банк B",
+  "status": "pending"
+ },
+ {
+  "app_id": "A0054",
+  "client_id": "C014",
+  "ts": "2026-07-30T07:00:00",
+  "product": "consumer_loan",
+  "amount_kzt": 1200000,
+  "term_months": 24,
+  "lender": "МФО D",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0003",
+  "client_id": "C004",
+  "ts": "2026-07-31T21:00:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "МФО E",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0044",
+  "client_id": "C013",
+  "ts": "2026-08-01T00:00:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "Банк A",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0026",
+  "client_id": "C030",
+  "ts": "2026-08-03T05:00:00",
+  "product": "microloan",
+  "amount_kzt": 300000,
+  "term_months": 3,
+  "lender": "МФО E",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0028",
+  "client_id": "C011",
+  "ts": "2026-08-04T12:00:00",
+  "product": "consumer_loan",
+  "amount_kzt": 2400000,
+  "term_months": 24,
+  "lender": "Банк C",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0013",
+  "client_id": "C025",
+  "ts": "2026-08-05T05:00:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "МФО D",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0051",
+  "client_id": "C031",
+  "ts": "2026-08-06T15:00:00",
+  "product": "consumer_loan",
+  "amount_kzt": 2400000,
+  "term_months": 24,
+  "lender": "Банк B",
+  "status": "pending"
+ },
+ {
+  "app_id": "A0039",
+  "client_id": "C008",
+  "ts": "2026-08-07T00:00:00",
+  "product": "consumer_loan",
+  "amount_kzt": 1200000,
+  "term_months": 24,
+  "lender": "МФО E",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0045",
+  "client_id": "C035",
+  "ts": "2026-08-07T14:00:00",
+  "product": "credit_card",
+  "amount_kzt": 500000,
+  "term_months": 12,
+  "lender": "МФО E",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0001",
+  "client_id": "C037",
+  "ts": "2026-08-08T02:00:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "МФО D",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0059",
+  "client_id": "C022",
+  "ts": "2026-08-12T06:00:00",
+  "product": "credit_card",
+  "amount_kzt": 500000,
+  "term_months": 12,
+  "lender": "МФО E",
+  "status": "pending"
+ },
+ {
+  "app_id": "A0023",
+  "client_id": "C004",
+  "ts": "2026-08-12T22:00:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "Банк B",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0008",
+  "client_id": "C029",
+  "ts": "2026-08-14T10:00:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "МФО E",
+  "status": "pending"
+ },
+ {
+  "app_id": "A0036",
+  "client_id": "C037",
+  "ts": "2026-08-15T20:00:00",
+  "product": "credit_card",
+  "amount_kzt": 500000,
+  "term_months": 12,
+  "lender": "Банк C",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0021",
+  "client_id": "C013",
+  "ts": "2026-08-16T19:00:00",
+  "product": "microloan",
+  "amount_kzt": 300000,
+  "term_months": 3,
+  "lender": "Банк C",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0012",
+  "client_id": "C021",
+  "ts": "2026-08-16T23:00:00",
+  "product": "credit_card",
+  "amount_kzt": 1000000,
+  "term_months": 12,
+  "lender": "МФО E",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0043",
+  "client_id": "C019",
+  "ts": "2026-08-20T19:00:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "Банк B",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0015",
+  "client_id": "C019",
+  "ts": "2026-08-21T10:00:00",
+  "product": "consumer_loan",
+  "amount_kzt": 1200000,
+  "term_months": 24,
+  "lender": "Банк C",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0025",
+  "client_id": "C008",
+  "ts": "2026-08-24T01:00:00",
+  "product": "credit_card",
+  "amount_kzt": 500000,
+  "term_months": 12,
+  "lender": "Банк A",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0047",
+  "client_id": "C012",
+  "ts": "2026-08-24T21:00:00",
+  "product": "credit_card",
+  "amount_kzt": 1000000,
+  "term_months": 12,
+  "lender": "МФО D",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0058",
+  "client_id": "C024",
+  "ts": "2026-08-25T03:00:00",
+  "product": "consumer_loan",
+  "amount_kzt": 1200000,
+  "term_months": 24,
+  "lender": "Банк B",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0048",
+  "client_id": "C004",
+  "ts": "2026-08-25T06:00:00",
+  "product": "consumer_loan",
+  "amount_kzt": 1200000,
+  "term_months": 24,
+  "lender": "МФО E",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0042",
+  "client_id": "C015",
+  "ts": "2026-08-25T21:00:00",
+  "product": "microloan",
+  "amount_kzt": 300000,
+  "term_months": 3,
+  "lender": "Банк B",
+  "status": "pending"
+ },
+ {
+  "app_id": "A0004",
+  "client_id": "C014",
+  "ts": "2026-08-26T14:00:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "МФО D",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0009",
+  "client_id": "C013",
+  "ts": "2026-08-26T16:00:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "МФО E",
+  "status": "pending"
+ },
+ {
+  "app_id": "A0052",
+  "client_id": "C021",
+  "ts": "2026-08-27T09:00:00",
+  "product": "credit_card",
+  "amount_kzt": 500000,
+  "term_months": 12,
+  "lender": "Банк A",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0017",
+  "client_id": "C037",
+  "ts": "2026-08-27T20:00:00",
+  "product": "consumer_loan",
+  "amount_kzt": 1200000,
+  "term_months": 24,
+  "lender": "Банк B",
+  "status": "pending"
+ },
+ {
+  "app_id": "A0010",
+  "client_id": "C034",
+  "ts": "2026-08-28T00:00:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "Банк C",
+  "status": "pending"
+ },
+ {
+  "app_id": "A0030",
+  "client_id": "C028",
+  "ts": "2026-08-28T12:00:00",
+  "product": "credit_card",
+  "amount_kzt": 1000000,
+  "term_months": 12,
+  "lender": "Банк C",
+  "status": "pending"
+ },
+ {
+  "app_id": "A0041",
+  "client_id": "C022",
+  "ts": "2026-08-29T04:00:00",
+  "product": "credit_card",
+  "amount_kzt": 500000,
+  "term_months": 12,
+  "lender": "Банк A",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0033",
+  "client_id": "C033",
+  "ts": "2026-09-02T02:00:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "Банк C",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0056",
+  "client_id": "C027",
+  "ts": "2026-09-02T03:00:00",
+  "product": "credit_card",
+  "amount_kzt": 500000,
+  "term_months": 12,
+  "lender": "Банк A",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0057",
+  "client_id": "C027",
+  "ts": "2026-09-04T05:00:00",
+  "product": "credit_card",
+  "amount_kzt": 1000000,
+  "term_months": 12,
+  "lender": "Банк C",
+  "status": "pending"
+ },
+ {
+  "app_id": "A0046",
+  "client_id": "C038",
+  "ts": "2026-09-04T09:00:00",
+  "product": "microloan",
+  "amount_kzt": 300000,
+  "term_months": 3,
+  "lender": "МФО E",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0035",
+  "client_id": "C012",
+  "ts": "2026-09-05T07:00:00",
+  "product": "credit_card",
+  "amount_kzt": 1000000,
+  "term_months": 12,
+  "lender": "Банк B",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0007",
+  "client_id": "C031",
+  "ts": "2026-09-08T06:00:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "МФО E",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0002",
+  "client_id": "C012",
+  "ts": "2026-09-08T12:00:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "Банк B",
+  "status": "pending"
+ },
+ {
+  "app_id": "A0060",
+  "client_id": "C023",
+  "ts": "2026-09-09T05:00:00",
+  "product": "microloan",
+  "amount_kzt": 300000,
+  "term_months": 3,
+  "lender": "МФО E",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0032",
+  "client_id": "C038",
+  "ts": "2026-09-09T22:00:00",
+  "product": "consumer_loan",
+  "amount_kzt": 2400000,
+  "term_months": 24,
+  "lender": "Банк C",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0038",
+  "client_id": "C036",
+  "ts": "2026-09-10T02:00:00",
+  "product": "credit_card",
+  "amount_kzt": 500000,
+  "term_months": 12,
+  "lender": "Банк B",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0027",
+  "client_id": "C004",
+  "ts": "2026-09-12T01:00:00",
+  "product": "consumer_loan",
+  "amount_kzt": 1200000,
+  "term_months": 24,
+  "lender": "Банк C",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0014",
+  "client_id": "C001",
+  "ts": "2026-09-14T19:00:00",
+  "product": "consumer_loan",
+  "amount_kzt": 2400000,
+  "term_months": 24,
+  "lender": "МФО D",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0018",
+  "client_id": "C025",
+  "ts": "2026-09-15T12:00:00",
+  "product": "credit_card",
+  "amount_kzt": 500000,
+  "term_months": 12,
+  "lender": "Банк B",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0037",
+  "client_id": "C023",
+  "ts": "2026-09-15T20:00:00",
+  "product": "credit_card",
+  "amount_kzt": 500000,
+  "term_months": 12,
+  "lender": "Банк B",
+  "status": "pending"
+ },
+ {
+  "app_id": "A0024",
+  "client_id": "C005",
+  "ts": "2026-09-15T23:00:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "МФО D",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0011",
+  "client_id": "C023",
+  "ts": "2026-09-16T00:00:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "МФО E",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0049",
+  "client_id": "C027",
+  "ts": "2026-09-16T08:00:00",
+  "product": "consumer_loan",
+  "amount_kzt": 2400000,
+  "term_months": 24,
+  "lender": "МФО D",
+  "status": "declined"
+ },
+ {
+  "app_id": "A0020",
+  "client_id": "C017",
+  "ts": "2026-09-16T15:00:00",
+  "product": "credit_card",
+  "amount_kzt": 500000,
+  "term_months": 12,
+  "lender": "Банк C",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0050",
+  "client_id": "C016",
+  "ts": "2026-09-18T06:00:00",
+  "product": "credit_card",
+  "amount_kzt": 500000,
+  "term_months": 12,
+  "lender": "Банк B",
+  "status": "pending"
+ },
+ {
+  "app_id": "A0053",
+  "client_id": "C023",
+  "ts": "2026-09-20T02:00:00",
+  "product": "microloan",
+  "amount_kzt": 300000,
+  "term_months": 3,
+  "lender": "МФО E",
+  "status": "approved"
+ },
+ {
+  "app_id": "A0022",
+  "client_id": "C023",
+  "ts": "2026-09-21T21:00:00",
+  "product": "microloan",
+  "amount_kzt": 300000,
+  "term_months": 3,
+  "lender": "МФО D",
+  "status": "declined"
+ },
+ {
+  "app_id": "A-DEMO-11",
+  "client_id": "C-DEMO-1",
+  "ts": "2026-09-21T23:05:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "МФО D",
+  "status": "approved"
+ },
+ {
+  "app_id": "A-DEMO-12",
+  "client_id": "C-DEMO-1",
+  "ts": "2026-09-21T23:20:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "МФО E",
+  "status": "approved"
+ },
+ {
+  "app_id": "A-DEMO-13",
+  "client_id": "C-DEMO-1",
+  "ts": "2026-09-21T23:48:00",
+  "product": "microloan",
+  "amount_kzt": 150000,
+  "term_months": 3,
+  "lender": "Банк C",
+  "status": "approved"
+ },
+ {
+  "app_id": "A-DEMO-2",
+  "client_id": "C-DEMO-2",
+  "ts": "2026-09-22T10:30:00",
+  "product": "consumer_loan",
+  "amount_kzt": 1500000,
+  "term_months": 24,
+  "lender": "Банк A",
+  "status": "pending",
+  "annual_rate_pct": 24.0
+ }
+]

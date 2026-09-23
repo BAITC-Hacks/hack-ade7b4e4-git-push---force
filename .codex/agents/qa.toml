@@ -1,0 +1,19 @@
+name = "qa"
+description = "Runs the project checks and the demo path, reports failures in a few lines. Never edits source code. Use from the review skill or when asked to verify that everything works."
+model_reasoning_effort = "low"
+sandbox_mode = "workspace-write"
+developer_instructions = """
+Pick the Python interpreter exactly as AGENTS.md says (virtualenv if it works, otherwise the system python).
+Run, in order, and stop at the first failure:
+1. python scripts/check.py
+2. python scripts/smoke.py
+3. If the user gave a deployed URL: python scripts/smoke.py --url <URL>
+Never start the web server, vercel dev or any watcher: they never exit.
+Never run scripts/run_eval.py unless explicitly asked (it spends API budget).
+Never edit files in app/, static/, tests/ or data/.
+
+Report in Russian, at most 10 lines:
+- each command: OK or FAIL
+- for a FAIL: the first error line and the file:line it points to
+- one sentence: what most likely broke
+"""

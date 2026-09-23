@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fintech AI Agent</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <h1 id="title">Fintech AI Agent</h1>
+      <p class="sub">AI-агент с маршрутизацией моделей, инструментами и объяснимыми решениями</p>
+    </div>
+    <div class="status">
+      <span id="mode" class="badge">...</span>
+      <span id="models" class="muted small"></span>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="panel chat" aria-label="Диалог с агентом">
+      <div class="chips" id="prompts" aria-label="Примеры запросов"></div>
+      <div id="log" class="log" aria-live="polite">
+        <p class="empty">Выберите пример сверху или задайте свой вопрос.</p>
+      </div>
+      <form id="form" class="composer">
+        <label class="sr" for="client">Клиент</label>
+        <select id="client"><option value="">Без клиента</option></select>
+        <label class="sr" for="msg">Вопрос</label>
+        <textarea id="msg" rows="2" placeholder="Например: проверь операцию T-DEMO-1" required></textarea>
+        <button id="send" type="submit">Отправить</button>
+      </form>
+    </section>
+
+    <aside class="side">
+      <section class="panel" aria-labelledby="h-decision">
+        <h2 id="h-decision">Решение</h2>
+        <div id="decision" class="muted">Пока нет ответа.</div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-how">
+        <h2 id="h-how">Как получен ответ</h2>
+        <div id="how" class="muted">Модель, маршрут, инструменты, токены, стоимость.</div>
+        <details id="sent" hidden>
+          <summary>Что ушло в модель</summary>
+          <pre id="sent-text"></pre>
+        </details>
+      </section>
+
+      <section class="panel" aria-labelledby="h-session">
+        <h2 id="h-session">Сессия</h2>
+        <div class="stats">
+          <div><b id="s-req">0</b><span>запросов</span></div>
+          <div><b id="s-fast">-</b><span>на быстрой модели</span></div>
+          <div><b id="s-cost">$0</b><span>потрачено</span></div>
+          <div><b id="s-lat">-</b><span>средняя задержка</span></div>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <footer class="foot muted small">
+    Синтетические данные. Персональные данные маскируются до отправки в модель. Решения с риском подтверждает сотрудник.
+  </footer>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script src="/app.js"></script>
+</body>
+</html>
