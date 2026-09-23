@@ -24,15 +24,15 @@
   "sensitivity_min_top20_overlap": 0.85,
   "cluster_stability_median": 1.0,
   "timings_s": {
-    "load": 0.48,
-    "features": 3.04,
-    "roles": 3.41,
-    "clusters": 3.52,
-    "priority": 4.72,
-    "layout": 5.85,
-    "export": 6.38,
-    "sensitivity": 11.17,
-    "viewer": 11.44
+    "load": 0.21,
+    "features": 2.24,
+    "roles": 2.63,
+    "clusters": 2.74,
+    "priority": 3.89,
+    "layout": 4.92,
+    "export": 5.46,
+    "sensitivity": 10.13,
+    "viewer": 10.41
   },
-  "viewer": "экран (запасной): out\\viewer.html (viewer/ недоступен: ModuleNotFoundError: No module named 'viewer.build')"
+  "viewer": "экран: out\\viewer.html"
 }
